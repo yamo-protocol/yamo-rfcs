@@ -65,6 +65,12 @@ The community participates through:
 
 - **RFC-0001**: YAMO v1.0 Protocol Specification
 
+## Draft RFCs
+
+- **RFC-0002**: YAMO v1.1 - Constitutional Governance Layer
+- **RFC-0003**: YAMO v1.1 - Token Optimization and Syntax Extensions
+- **RFC-0004**: YAMO Gateway & Workspace Specification
+
 ## License
 
 All RFCs are released under MIT License unless otherwise noted.
