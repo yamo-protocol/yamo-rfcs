@@ -70,6 +70,9 @@ The community participates through:
 - **RFC-0002**: YAMO v1.1 - Constitutional Governance Layer
 - **RFC-0003**: YAMO v1.1 - Token Optimization and Syntax Extensions
 - **RFC-0004**: YAMO Gateway & Workspace Specification
+- **RFC-0005**: YAMO v3.0 - The Singularity Protocol
+- **RFC-0006**: Autonomous Kernel & Ghost Protection
+- **RFC-0007**: Semantic Heritage & Wisdom Distillation
 
 ## License
 
