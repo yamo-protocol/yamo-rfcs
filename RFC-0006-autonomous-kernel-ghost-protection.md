@@ -46,6 +46,59 @@ The kernel is divided into three mandatory modules:
 - **Micro-Workflows**: TDD, Debugging, and Review cycles.
 - **Background Tasks**: Proactive heartbeats and memory maintenance.
 
+### 4. InterceptionEngine — Scoring Formula (Amendment 2026-02-18)
+
+The `InterceptionEngine` in `lib/kernel/interception-engine.ts` makes skill-interception decisions using a **three-factor weighted score**:
+
+```
+interception_score(candidate) =
+    0.6 × semantic_similarity
+  + 0.3 × reliability_score
+  + 0.1 × use_confidence
+```
+
+Where:
+- `semantic_similarity ∈ [0, 1]` — cosine similarity between query embedding and skill embedding
+- `reliability_score ∈ [0, 1]` — Bayesian reliability: `successes / (successes + failures + 1)`
+- `use_confidence ∈ [0, 1]` — normalized use count: `min(1, use_count / 100)`
+
+**Threshold semantics:**
+
+| Context | Threshold | Rationale |
+|---------|-----------|-----------|
+| General skill interception | `0.4` | Permissive to encourage evolution |
+| Core command protection | `0.85` | Strict to prevent reflex hijacking |
+| Recursion guard | `depth ≥ 3 → block` | Prevents infinite recursion |
+
+A candidate with `interception_score < threshold` is **not intercepted** and falls through to the standard execution path.
+
+### 5. StochasticSelector — Shannon Entropy Normalization (Amendment 2026-02-18)
+
+The `StochasticSelector` in `lib/kernel/stochastic-selector.ts` uses **softmax sampling** with a temperature derived from the `EntropyMeter`:
+
+```
+P(skill_i) = exp(score_i / T) / Σ_j exp(score_j / T)
+```
+
+Where temperature `T` is set by the `EntropyMeter`:
+
+```
+T = max(0.1, 1.0 - diversity_entropy / target_entropy)
+```
+
+**Shannon entropy** of the selection distribution is computed as:
+
+```
+H = -Σ_i P(skill_i) × log2(P(skill_i))
+```
+
+**Adaptive entropy target:**
+- If `recent_success_rate > 0.8` and `H < target_entropy`: increase `target_entropy` by 0.05 (explore more)
+- If `recent_success_rate < 0.4` and `H > target_entropy`: decrease `target_entropy` by 0.05 (exploit more)
+- `target_entropy` is clamped to `[0.3, 2.5]`
+
+Core commands (e.g., `boot`, `status`, `help`) bypass the stochastic selector and are executed deterministically regardless of entropy state.
+
 ## Rationale
 
 By placing the boot logic in a protocol-native file (`BOOTSTRAP.yamo`) and self-healing the platform's primary instruction file (`AGENTS.md`), we create a "Closed Cognitive Loop" that is resistant to drift and external tampering.

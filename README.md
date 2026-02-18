@@ -74,6 +74,16 @@ The community participates through:
 - **RFC-0006**: Autonomous Kernel & Ghost Protection
 - **RFC-0007**: Semantic Heritage & Wisdom Distillation
 
+## Proposed RFCs
+
+- **RFC-0008**: YAMO Wire Protocol v1 (gateway RPC, audit format, channel messages, device auth)
+- **RFC-0011**: @yamo/memory-mesh Specification (schema, API contract, LessonLearned wire format, wisdom distillation) — **Draft written, implemented**
+- **RFC-0012**: S-MORA Retrieval Augmentation (5-layer RAG pipeline, HyDE-Lite, hybrid retrieval) — **Draft written**
+
+## Expert Review
+
+- **RFC-SYNTHESIS-2026-02-18**: Full codebase expert review — findings, amendment recommendations, and new RFC proposals from 4 parallel expert agents (Protocol/Kernel, Memory/Persistence, Singularity/Skills, S-MORA/Retrieval)
+
 ## License
 
 All RFCs are released under MIT License unless otherwise noted.
