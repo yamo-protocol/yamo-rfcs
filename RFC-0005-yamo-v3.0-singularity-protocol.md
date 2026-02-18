@@ -24,11 +24,29 @@ YAMO v3.0 solves these by enforcing a **Protocol-Native** environment where the 
 
 ### 1. The Zero-JSON Mandate
 
-In YAMO v3.0, the use of JSON for state passing or agent instructions is **strictly prohibited** (Critical Priority). 
+In YAMO v3.0, the use of JSON for state passing or agent instructions is **strictly prohibited** (Critical Priority).
 
 *   **State Mode**: `llm_first` (native YAMO).
 *   **Inter-Agent Communication**: Must use `.yamo` context files or blocks.
 *   **Kernel Interface**: Commands are issued as semantic intents, never as JSON parameters.
+
+#### §1.1 Scope Clarification
+
+The Zero-JSON Mandate applies **exclusively** to the YAMO agent protocol layer — specifically to:
+- `.yamo` skill files and skill block definitions
+- Agent-to-agent context passing (YAMO context chains)
+- Kernel interface commands and semantic intent declarations
+- Inter-agent state passing in the YAMO runtime
+
+The mandate does **not** apply to:
+- **TypeScript/JavaScript implementation code** — internal types, interfaces, and data structures in `.ts`/`.js` source files may freely use JSON, objects, and typed schemas
+- **LanceDB schema and storage** — database adapters use JSON metadata fields for persistence
+- **CLI tools** — command-line interfaces may accept and emit JSON for machine-readable output
+- **Test code** — unit and integration tests may use any format appropriate for the test framework
+- **HTTP/WebSocket interfaces** — network protocol layers may use JSON for external interoperability (e.g., gateway RPC per RFC-0008)
+- **Configuration files** — `package.json`, `tsconfig.json`, and environment configs are exempt
+
+**Rationale**: The mandate targets the cognitive protocol layer where YAMO semantic parsing provides reliability and injection resistance. Implementation internals already have type-safe alternatives (TypeScript interfaces) that achieve the same goals through different means.
 
 ### 2. YAMO Frontmatter (Standardized)
 
