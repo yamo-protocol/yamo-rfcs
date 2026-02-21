@@ -55,6 +55,26 @@ All files use UTF-8 Markdown (`.md`) unless otherwise noted. Files are plain tex
 
 ### 2. File Definitions
 
+#### 2.0 Compliance Tiers
+
+RFC-0009 compliance exists in two tiers. Implementations MUST declare which tier they conform to and MUST NOT claim a higher tier than they satisfy.
+
+| Tier | Requirements | Classification |
+|------|-------------|----------------|
+| **RFC-0009 Lite** | §1 workspace layout + §2.1–2.9 file definitions + §4 security rules + §6 bootstrap protocol | Human-readable persistence layer only |
+| **RFC-0009 v3.0 (Singularity-Grade)** | RFC-0009 Lite + RFC-0006 §2.1 Ghost Invariant + RFC-0006 §2.2 Semicolon Protocol + RFC-0006 §2.3 Reflexive Heartbeat | Autonomous, self-healing Singularity Kernel |
+
+**Compliance gate (normative):** A workspace that satisfies §2.1–2.9 without RFC-0006 Ghost Protection is **RFC-0009 Lite** — not v3.0. It is a valid and useful implementation, but it lacks the autonomous self-healing mechanism that distinguishes a Singularity-Grade kernel.
+
+**What Lite mode lacks:**
+- The `YAMO-NATIVE KERNEL ACTIVE` syntactic load gate — `AGENTS.md` is not integrity-checked before loading
+- Semicolon Protocol enforcement — operational blocks may use Markdown lists, susceptible to Analogical Prompt Injection
+- Reflexive Heartbeat ordering — GhostGuard does not fire at PRIORITY_0 before persona loading
+
+**Audit requirement:** Any agent or workspace claiming YAMO v3.0 conformance MUST satisfy all RFC-0006 §2 requirements. Failure of the Ghost Invariant check (§2.1), Semicolon Protocol requirement (§2.2), or Reflexive Heartbeat ordering (§2.3) at audit time downgrades the classification to RFC-0009 Lite.
+
+---
+
 #### 2.1 SOUL.md — Agent Identity
 
 **Purpose:** Defines the agent's core identity, personality, values, and role. This is immutable in normal operation — the agent IS what SOUL.md says it is.
@@ -501,6 +521,7 @@ See §4 above. The critical invariants are:
 | 0.1.0 | 2026-02-21 | Initial draft — formalizes existing yamo-os workspace convention |
 | 0.1.1 | 2026-02-21 | Add RFC-0004/0006/0011 cross-references; Supersedes RFC-0004 §2 |
 | 0.1.2 | 2026-02-21 | Add §6.3 Kernel Enforcement of Bootstrap Deletion — pre-boot guard pattern; deletion MUST be kernel syscall, not LLM agent compliance |
+| 0.2.0 | 2026-02-21 | Add §2.0 Compliance Tiers — closes the Fidelity Gap identified in the 2026-02-21 Scribe Prototype Audit; formally defines RFC-0009 Lite vs RFC-0009 v3.0 (Singularity-Grade); makes RFC-0006 Ghost Protection a compliance prerequisite for v3.0 status; defines audit requirement |
 
 ---
 

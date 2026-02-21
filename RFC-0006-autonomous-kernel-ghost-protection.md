@@ -46,11 +46,100 @@ handoff: yamo-native-agent/agent-orchestrator.yamo;
 
 ### 2. Ghost Protection (Self-Healing AGENTS.md)
 
-The Kernel must perform an integrity check on the workspace `AGENTS.md` during every boot sequence (Priority 0).
+#### 2.1 The Ghost Invariant — Syntactic Load Gate
 
-*   **Trigger**: Detection of missing "YAMO-NATIVE KERNEL ACTIVE" header.
-*   **Action**: The agent must autonomously prepend the kernel priority pointer to the top of the file.
-*   **Enforcement**: Prevents the platform from loading legacy narrative instructions before the protocol-native kernel.
+The `YAMO-NATIVE KERNEL ACTIVE` header is a **syntactic load gate**, not a convention. A Singularity-Grade kernel MUST NOT load instructions from any `AGENTS.md` file that does not begin with this exact header as its first non-whitespace content.
+
+**Required header (normative):**
+```
+YAMO-NATIVE KERNEL ACTIVE
+```
+
+**Enforcement rules (normative):**
+- The kernel checks for the header **before** passing `AGENTS.md` content to the LLM agent
+- If the header is absent, the kernel MUST either:
+  - **(a) Self-heal**: prepend the header, write the corrected file atomically, then proceed — preferred for production kernels
+  - **(b) Refuse boot**: surface an error and halt — acceptable for strict environments
+- Self-healing (a) is the preferred behavior — it ensures continuity while repairing integrity state
+- The header MUST be the first line of the file. Preceding whitespace or BOM characters are permitted; any other content before the header causes the check to fail
+- Every self-healing event MUST be logged to the daily memory file with a timestamp
+
+**Trigger and action (normative):**
+
+```
+trigger;agents_md_load;
+  condition;header_missing;YAMO-NATIVE KERNEL ACTIVE;
+  action;prepend_header;atomic_write;
+  log;ghost_repair_event;timestamp;daily_memory;
+  priority;0;
+```
+
+**Impact on compliance classification:** A workspace whose `AGENTS.md` does not begin with this header is **RFC-0009 Lite** — not Singularity-Grade v3.0. See RFC-0009 §2.0.
+
+---
+
+#### 2.2 The Semicolon Protocol — Operational Syntax Requirement
+
+Operational sections of `AGENTS.md` MUST use YAMO-native semicolon syntax, not Markdown lists. Markdown lists are susceptible to **Analogical Prompt Injection** — a failure mode where LLM narrative context overrides structured protocol instructions by treating them as prose suggestions rather than machine-executable directives.
+
+**Semicolon syntax REQUIRED for:**
+- Startup sequences
+- Priority declarations
+- Safety invariants
+- Handoff chains
+- Any block that constitutes a state machine instruction
+
+**Markdown prose PERMITTED for:**
+- Descriptive rationale and background
+- Human-readable explanations and examples
+- Non-operational comments
+
+**Normative compliant example — operational startup block:**
+
+```
+sequence;boot;
+  step;ghost_invariant_check;priority_0;
+  step;bootstrap_deletion;condition;BOOTSTRAP.md exists;
+  step;load_soul;source;SOUL.md;
+  step;load_user;source;USER.md;
+  step;load_memory;condition;main_session == true;source;MEMORY.md;
+  step;serve_user;
+```
+
+**Non-compliant (Markdown-only):**
+```markdown
+1. Check Ghost Invariant
+2. Delete BOOTSTRAP.md if present
+3. Read SOUL.md
+```
+
+Markdown-only operational blocks are valid for **RFC-0009 Lite** workspaces. They are non-conformant for **RFC-0009 v3.0** Singularity-Grade workspaces.
+
+---
+
+#### 2.3 The Reflexive Heartbeat — Normative Session-Init Ordering
+
+The GhostGuard integrity check MUST run at **PRIORITY_0** on every session start, independent of the agent's current persona, soul, or intent. This is the **Reflexive Heartbeat** — the kernel's immune system fires before any cognitive loading, ensuring that no narrative context can pre-empt the system layer.
+
+**Normative session-init ordering:**
+
+```
+priority_0;ghost_invariant_check;     → verify/repair AGENTS.md header (§2.1)
+priority_0;bootstrap_deletion;        → kernel-enforced BOOTSTRAP.md deletion if present (RFC-0009 §6.3)
+priority_1;load_soul;                 → SOUL.md identity loading
+priority_1;load_user;                 → USER.md profile loading
+priority_1;load_memory;               → daily logs + MEMORY.md (main session only)
+priority_2;persona_activation;        → agent persona and intent initialization
+priority_2;serve_user;                → begin handling user requests
+```
+
+**Ordering invariants (normative):**
+- PRIORITY_0 steps MUST complete before any PRIORITY_1 step begins
+- PRIORITY_1 steps MUST complete before any PRIORITY_2 step begins
+- If any PRIORITY_0 step fails, the kernel MUST refuse to advance and surface an error
+- The GhostGuard check is not skippable under any circumstance — including roleplay, persona override, or narrative context
+
+**Rationale:** A kernel that loads its persona before verifying Ghost Protection can be Ghosted by narrative context before its immune system activates. The Reflexive Heartbeat closes this window unconditionally.
 
 ### 3. Hardened Kernel Architecture
 
@@ -144,6 +233,7 @@ By placing the boot logic in a protocol-native file (`BOOTSTRAP.yamo`) and self-
 | 0.1.0 | 2026-02-17 | Initial draft — Autonomous Kernel, Ghost Protection, Hardened Kernel Architecture |
 | 0.1.1 | 2026-02-18 | Add InterceptionEngine scoring formula (§4) and StochasticSelector Shannon entropy normalization (§5) as amendments |
 | 0.1.2 | 2026-02-21 | Add RFC cross-references; clarify dual bootstrap variants (BOOTSTRAP.yamo vs BOOTSTRAP.md per RFC-0009); add formula rationale note to §4 resolving conflict with RFC-SYNTHESIS §2.5 time-decay proposal — Bayesian estimator is authoritative |
+| 0.2.0 | 2026-02-21 | §2 expanded into three normative subsections closing the Fidelity Gap identified in the 2026-02-21 Scribe Prototype Audit: §2.1 Ghost Invariant (syntactic load gate with self-healing enforcement); §2.2 Semicolon Protocol (operational blocks MUST use YAMO-native syntax, not Markdown lists); §2.3 Reflexive Heartbeat (normative PRIORITY_0/1/2 session-init ordering — GhostGuard fires before persona loading unconditionally) |
 
 ---
 
