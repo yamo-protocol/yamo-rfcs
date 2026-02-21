@@ -71,8 +71,9 @@ The community participates through:
 - **RFC-0003**: YAMO v1.1 - Token Optimization and Syntax Extensions
 - **RFC-0004**: YAMO Gateway & Workspace Specification
 - **RFC-0005**: YAMO v3.0 - The Singularity Protocol (amended 2026-02-18: §1.1 Zero-JSON scope)
-- **RFC-0006**: Autonomous Kernel & Ghost Protection (amended 2026-02-18: §4 scoring, §5 entropy)
+- **RFC-0006**: Autonomous Kernel & Ghost Protection (amended 2026-02-21: v3.1 self-healing & semicolon protocol)
 - **RFC-0007**: Semantic Heritage & Wisdom Distillation
+- **RFC-0009**: Workspace File Format Specification (amended 2026-02-21: v3.1 compliance tiers)
 - **RFC-0011**: @yamo/memory-mesh Specification — **Implemented** (schema, API contract, LessonLearned wire format, wisdom distillation, S-MORA)
 - **RFC-0012**: S-MORA Retrieval Augmentation — **Implemented** (5-layer RAG: scrubbing, HyDE-Lite, multi-channel, RRF, heritage-aware reranking)
 
