@@ -46,34 +46,61 @@ All connections to YAMO network interfaces MUST authenticate using **Ed25519 key
 
 ```
 POST /auth/register
-Body: { public_key: base64(ed25519_pubkey), device_id: string, label: string }
-Response: { device_token: string, expires_at: ISO-8601 }
+Body: { public_key: hex_string(ed25519_pubkey), kernel_id: string }
+Response: { session_id: string, registered_at: ISO-8601 }
 ```
 
-The `device_token` is a signed JWT (`RS256`) issued by the gateway, embedding `device_id` and `public_key` fingerprint. TTL: 24 hours.
+- `public_key` is a **lowercase hex string** (64 chars = 32 bytes of Ed25519 public key)
+- `kernel_id` identifies the registering kernel; `session_id` is returned for use in subsequent tokens
+- The registered public key is stored in the bridge `KeyRegistry` ETS table keyed by `session_id`
 
-#### 2.2 Challenge-Response Handshake
+#### 2.2 Token Protocol — Timestamp Freshness
 
-On WebSocket/Channel connect:
-
-```
-Client → Server: { type: "auth", device_token: string, challenge_sig: base64 }
-```
-
-Where `challenge_sig = Ed25519.sign(private_key, challenge_bytes)` and `challenge_bytes` are issued by the server on the initial HTTP upgrade response header `X-YAMO-Challenge`.
+After registration, the client constructs a **self-signed session token** for each request:
 
 ```
-Server → Client: { type: "auth_ok", kernel_id: string, session_id: string }
-             OR: { type: "auth_fail", reason: string }
+token = "{session_id}:{timestamp_ms}:{signature_hex}"
 ```
+
+Where:
+- `session_id` — the value returned from `/auth/register`
+- `timestamp_ms` — current Unix time in milliseconds (UTC)
+- `signature_hex` — lowercase hex Ed25519 signature over the string `"{session_id}:{timestamp_ms}"`
+
+The token is passed as a `Bearer` token in the `Authorization` header or as the `token` field in the Phoenix Channel join payload.
+
+**Freshness window:** The bridge validates that `|now_ms - timestamp_ms| ≤ 30_000ms`. Tokens older than 30 seconds are rejected with `token_expired`. This 30-second window provides equivalent replay-attack protection to a server-issued challenge-response scheme while eliminating the HTTP-layer round-trip required to obtain challenge bytes.
+
+> **Implementation rationale:** HTTP-upgrade challenge injection (`X-YAMO-Challenge`) requires cowboy-level socket access below the Phoenix channel abstraction layer, creating unnecessary transport coupling. The timestamp freshness window is a well-established alternative (TLS-style) that achieves the same security property — an intercepted token is useless after 30 seconds — without this coupling.
+
+**Client clock sync:** Clients MUST maintain system clock accuracy within ±15 seconds (half the freshness window). NTP is sufficient.
+
+**Verification error codes:**
+- `invalid_token_format` — token does not match `session_id:timestamp_ms:sig_hex` pattern
+- `invalid_timestamp` — `timestamp_ms` is not a valid integer
+- `token_expired` — `|now_ms - timestamp_ms| > 30_000`
+- `not_found` — `session_id` not registered in `KeyRegistry`
+- `invalid_hex` — `signature_hex` is not valid hexadecimal
+- `invalid_signature` — Ed25519 verification failed
 
 #### 2.3 Token Refresh
 
-Clients MUST refresh the `device_token` before expiry using:
+Clients MAY refresh the session by re-presenting a valid token:
 ```
 POST /auth/refresh
-Header: Authorization: Bearer <current_device_token>
-Response: { device_token: string, expires_at: ISO-8601 }
+Header: Authorization: Bearer <current_token>
+Response: { device_token: string, expires_at: ISO-8601, session_id: string }
+```
+
+#### 2.4 Key Rotation
+
+Clients MAY rotate their Ed25519 key pair. The old token must still be valid at rotation time (proves possession of the old private key). After rotation, the old key is immediately invalidated.
+
+```
+POST /auth/rotate
+Header: Authorization: Bearer <current_token>
+Body: { new_public_key: hex_string(new_ed25519_pubkey) }
+Response: { rotated: true, kernel_id: string, rotated_at: ISO-8601 }
 ```
 
 ---
@@ -265,8 +292,9 @@ All HTTP endpoints use JSON (network layer exemption per RFC-0005 §1.1).
 | `GET` | `/metrics` | Prometheus-compatible metrics |
 | `GET` | `/agents` | Current agent registry snapshot |
 | `GET` | `/agents/:id` | Single agent state |
-| `POST` | `/auth/register` | Register device, get token |
-| `POST` | `/auth/refresh` | Refresh device token |
+| `POST` | `/auth/register` | Register Ed25519 public key, obtain session_id |
+| `POST` | `/auth/refresh` | Re-validate current token, get refreshed session |
+| `POST` | `/auth/rotate` | Rotate Ed25519 key pair (invalidates old key immediately) |
 | `POST` | `/rpc` | JSON-RPC 2.0 one-off commands (see §6) |
 
 ---
@@ -414,6 +442,7 @@ Raft machine name: `:yamo_cluster` (atom). Server IDs follow the pattern `{:yamo
 | 0.1.0 | 2026-02-20 | Initial draft — transport, device auth, Phoenix channel topics, message formats, HTTP endpoints, JSON-RPC, streaming, local-only mode |
 | 0.1.1 | 2026-02-21 | Add `advertise_capabilities` inbound kernel event (§4.4) and `skill_error` dead-letter broadcast event (§4.5); renumber §4.5 Audit Event Format to §4.7 |
 | 0.1.2 | 2026-02-21 | Add §8.1 Security Degradation callout for local-only mode audit provenance loss (`raft_log_index: 0`); add §9 Raft Implementation Constraints (`:ra` library, defaults, log compaction) |
+| 0.1.3 | 2026-02-21 | §2 rewritten to canonize implemented auth scheme: hex public keys, `session_id:timestamp_ms:sig_hex` token format, 30s timestamp freshness window (replaces HTTP-layer challenge-response); add §2.4 Key Rotation; add `POST /auth/rotate` to §5 endpoints table; add implementation rationale for freshness-over-challenge design decision |
 
 ---
 
