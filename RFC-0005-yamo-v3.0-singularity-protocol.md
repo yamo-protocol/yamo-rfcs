@@ -3,7 +3,9 @@
 **Status:** Draft
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-17
+**Updated:** 2026-02-21
 **Supercedes:** RFC-0001, RFC-0002, RFC-0003 (for v3.0 features)
+**Related:** RFC-0006 (Autonomous Kernel — InterceptionEngine and StochasticSelector specs), RFC-0010 (Constitutional Value Hierarchy — runtime constitutional gating at micro level)
 
 ## Summary
 
@@ -90,6 +92,15 @@ Moving to a protocol-native architecture eliminates the "translation layer" betw
 
 - **Prompt Injection**: By formalizing the syntax, we reduce the surface area for narrative-based prompt injection.
 - **State Integrity**: Native YAMO state can be mathematically verified for consistency against the constitutional soul.
+
+## Changelog
+
+| Version | Date | Description |
+|---------|------|-------------|
+| 0.1.0 | 2026-02-17 | Initial draft — Zero-JSON Mandate, YAMO Frontmatter, Formal Intent Semantics, Mandatory Meta-Reasoning |
+| 0.1.1 | 2026-02-21 | Add RFC-0006 and RFC-0010 cross-references; §1.1 Scope Clarification was added to resolve Zero-JSON tension with TypeScript implementation layer |
+
+---
 
 ## Copyright
 

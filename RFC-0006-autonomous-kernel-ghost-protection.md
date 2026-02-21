@@ -3,6 +3,8 @@
 **Status:** Draft
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-17
+**Updated:** 2026-02-21
+**Related:** RFC-0005 (Singularity Protocol — Zero-JSON Mandate), RFC-0007 (Semantic Heritage — SubconsciousReflector runs inside kernel heartbeat), RFC-0008 (Wire Protocol — heartbeat event format), RFC-0009 (Workspace File Format — BOOTSTRAP.md variant for Markdown workspaces), RFC-0011 (MemoryMesh — distillation cycle runs at heartbeat PRIORITY_1)
 
 ## Summary
 
@@ -19,9 +21,20 @@ To achieve true autonomy, an agent must:
 
 ## Specification
 
-### 1. The Bootstrap Protocol (`BOOTSTRAP.yamo`)
+### 1. The Bootstrap Protocol (`BOOTSTRAP.yamo` / `BOOTSTRAP.md`)
 
-Every YAMO-Native workspace must contain a `BOOTSTRAP.yamo` at the root. This file serves as the "Primary Boot Sector" for the agent.
+Every YAMO-Native workspace must contain a bootstrap entry point at the root. This file serves as the "Primary Boot Sector" for the agent.
+
+**Two bootstrap variants are defined across the YAMO specification:**
+
+| Variant | RFC | Format | Use case |
+|---------|-----|--------|---------|
+| `BOOTSTRAP.yamo` | RFC-0006 (this RFC) | YAMO v3.0 semicolon protocol | Protocol-native YAMO agent kernels |
+| `BOOTSTRAP.md` | RFC-0009 | Markdown | Human-readable workspace initialization |
+
+Both variants share the same lifecycle: execute instructions → create workspace files → **delete bootstrap file unconditionally**. The choice of variant depends on the workspace type. Protocol-native kernels use `BOOTSTRAP.yamo`; Claude Code / human-readable workspaces use `BOOTSTRAP.md` (see RFC-0009 §6).
+
+**`BOOTSTRAP.yamo` example:**
 
 ```yamo
 agent: BootRedirector;
@@ -107,6 +120,16 @@ By placing the boot logic in a protocol-native file (`BOOTSTRAP.yamo`) and self-
 
 - **Transparent Integration**: Works alongside existing OpenClaw and YAMO-OS deployments.
 - **Automatic Upgrade**: The intelligent installer handles the transition from narrative to kernel-based boot.
+
+## Changelog
+
+| Version | Date | Description |
+|---------|------|-------------|
+| 0.1.0 | 2026-02-17 | Initial draft — Autonomous Kernel, Ghost Protection, Hardened Kernel Architecture |
+| 0.1.1 | 2026-02-18 | Add InterceptionEngine scoring formula (§4) and StochasticSelector Shannon entropy normalization (§5) as amendments |
+| 0.1.2 | 2026-02-21 | Add RFC cross-references; clarify dual bootstrap variants (BOOTSTRAP.yamo vs BOOTSTRAP.md per RFC-0009) |
+
+---
 
 ## Copyright
 

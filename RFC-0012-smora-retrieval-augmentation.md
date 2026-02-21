@@ -3,7 +3,8 @@
 **Status:** Draft
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-18
-**Depends on:** RFC-0011 (Memory Mesh), RFC-0005 (Singularity Protocol)
+**Updated:** 2026-02-21
+**Depends on:** RFC-0011 (MemoryMesh — base hybrid search, Layer 0 Scrubber, LanceDB schema), RFC-0005 (Singularity Protocol — Zero-JSON Mandate applies to YAMO agent layer), RFC-0007 (Semantic Heritage — SubconsciousReflector integration, heritage chain used in Layer 4 reranking)
 
 ---
 
@@ -28,7 +29,7 @@ S-MORA closes these gaps without requiring external API dependencies in the defa
 
 ### Layer 0 — Pre-Retrieval Scrubbing
 
-All queries pass through the Layer 0 Scrubber (RFC-0011 §5) before embedding. This normalises whitespace, strips HTML, and collapses boilerplate. The scrubbed query is used for all downstream layers.
+All queries pass through the Layer 0 Scrubber (RFC-0011 §6) before embedding. This normalises whitespace, strips HTML, and collapses boilerplate. The scrubbed query is used for all downstream layers.
 
 ```
 raw_query → Scrubber → scrubbed_query
@@ -225,6 +226,15 @@ Target files:
 - `lib/memory/memory-mesh.ts` — add `smora()` public method
 - `bin/memory_mesh.js` — add `smora` CLI command
 - `test/unit/smora.test.ts` — TDD test suite
+
+---
+
+## Changelog
+
+| Version | Date | Description |
+|---------|------|-------------|
+| 0.1.0 | 2026-02-18 | Initial draft — 5-layer S-MORA pipeline: HyDE-Lite, multi-source retrieval, RRF, heritage-aware reranking, synthesis |
+| 0.1.1 | 2026-02-21 | Fix Layer 0 Scrubber reference from RFC-0011 §5 → §6; add RFC-0007 dependency for SubconsciousReflector heritage chain |
 
 ---
 

@@ -3,6 +3,8 @@
 **Status:** Draft
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-17
+**Updated:** 2026-02-21
+**Related:** RFC-0006 (Autonomous Kernel — heartbeat trigger for distillation cycle), RFC-0010 (Constitutional Value Hierarchy — FINAL phase reasoning produces LessonLearned candidates), RFC-0011 (MemoryMesh — implementation of wisdom distillation, canonical LessonLearned wire format), RFC-0012 (S-MORA — enhanced lesson retrieval via HyDE-Lite + heritage-aware reranking)
 
 ## Summary
 
@@ -42,15 +44,21 @@ The `MemoryKernel` module must autonomously execute a distillation cycle (Heartb
 
 ### 3. The LessonLearned Block
 
+> **Authoritative wire format**: The conceptual structure below is a summary. The **canonical, fully-specified LessonLearned YAMO block wire format** is defined in **RFC-0011 §3.5**. Implementations MUST use the RFC-0011 §3.5 format for serialization, storage, and inter-agent exchange.
+
+**Conceptual field mapping** (use RFC-0011 §3.5 for the normative definition):
+
 ```yamo
 concept: LessonLearned;
-structure:
+required_fields:
   context;situation_description;
   oversight;what_was_missed;
   fix;how_it_was_resolved;
   constraint;preventative_rule_for_future;
   tags;["#lesson_learned"];
 ```
+
+> **Terminology note**: The field container was originally named `structure:`. RFC-0011 uses `output:` and `context:` per standard YAMO block grammar. `required_fields:` is used above for conceptual clarity; see RFC-0011 §3.5 for the normative field layout.
 
 ### 4. Subconscious Reflection
 
@@ -65,6 +73,15 @@ Semantic Heritage prevents "Intent Decay" in long-running projects. Wisdom Disti
 ## Security Considerations
 
 - **Privacy**: The distillation process must invoke the "Layer 0 Scrubber" to ensure PII and secrets are never persisted to long-term wisdom stores.
+
+## Changelog
+
+| Version | Date | Description |
+|---------|------|-------------|
+| 0.1.0 | 2026-02-17 | Initial draft — Semantic Heritage Protocol, Wisdom Distillation Workflow, LessonLearned Block, SubconsciousReflector |
+| 0.1.1 | 2026-02-21 | Add RFC cross-references; update LessonLearned §3 to point to RFC-0011 §3.5 as canonical wire format; add `required_fields:` terminology note |
+
+---
 
 ## Copyright
 

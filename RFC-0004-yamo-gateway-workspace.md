@@ -60,6 +60,21 @@ We chose the Gateway model over the Daemon model to facilitate real-time streami
 
 Elements of this specification are currently running as a prototype in the **OpenClaw-YAMO Bridge** deployment (Feb 2026).
 
+## Supersession Note
+
+The **YAMO Workspace** structure introduced in §2 of this RFC has been superseded and fully specified by **RFC-0009** (YAMO Workspace File Format Specification). RFC-0009 is the authoritative reference for `SOUL.md`, `AGENTS.md`, `USER.md`, `MEMORY.md`, `BOOTSTRAP.md`, and daily memory files. The Gateway and Node Protocol sections of this RFC remain active.
+
+---
+
+## Changelog
+
+| Version | Date | Description |
+|---------|------|-------------|
+| 0.1.0 | 2026-02-14 | Initial draft — YAMO Gateway, Workspace, Node Protocol, Pairing UX |
+| 0.1.1 | 2026-02-21 | Add RFC-0009 supersession note for workspace file definitions |
+
+---
+
 ## Copyright
 
 Copyright and related rights waived via [MIT License](https://opensource.org/licenses/MIT).

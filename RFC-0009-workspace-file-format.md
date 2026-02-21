@@ -4,7 +4,9 @@
 **Author:** Soverane Labs
 **Created:** 2026-02-21
 **Updated:** 2026-02-21
-**Implemented by:** `yamo-os/` (Node.js kernel), `yamo-bridge/` (Elixir coordination plane)
+**Implemented by:** `yamo-os/` (Node.js kernel)
+**Supersedes:** RFC-0004 §2 (Standardized YAMO Workspace — superseded by this RFC; RFC-0004 Gateway and Node Protocol sections remain active)
+**Related:** RFC-0004 (YAMO Gateway — first introduced workspace concept), RFC-0006 (Autonomous Kernel — defines `BOOTSTRAP.yamo` for protocol-native kernels; RFC-0009 defines `BOOTSTRAP.md` for Markdown workspaces), RFC-0007 (Semantic Heritage — governs MEMORY.md distillation cycle), RFC-0011 (MemoryMesh — semantic search layer complementing workspace files)
 
 ---
 

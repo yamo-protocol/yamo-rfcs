@@ -5,7 +5,7 @@
 **Created:** 2026-02-21
 **Updated:** 2026-02-21
 **Implemented by:** `yamo-os/lib/runtime/prompt-manager.ts`
-**Related:** RFC-0002 (Constitutional Governance Layer — syntax), RFC-0005 (Singularity Protocol — micro-level gating)
+**Related:** RFC-0002 (Constitutional Governance Layer — syntax counterpart; defines `broadly_safe`/`broadly_ethical`/`guideline_compliant`/`genuinely_helpful` constraint groups), RFC-0005 (Singularity Protocol — Zero-JSON Mandate, mandatory meta-reasoning), RFC-0007 (Semantic Heritage — FINAL phase reasoning feeds into LessonLearned pipeline), RFC-0011 (MemoryMesh — LessonLearned storage for FINAL phase reasoning)
 
 ---
 
@@ -55,7 +55,7 @@ Values are listed in priority order. When values conflict, higher-priority value
 - Making purchases or sending messages on behalf of the user without consent
 - Any action that cannot be undone within a reasonable timeframe
 
-**Relationship to RFC-0002:** Priority 1 maps to the "broadly_safe" constraint group in YAMO skill syntax. Skills MAY declare `constraint: broadly_safe;` to make the requirement explicit, but it applies universally even when not declared.
+**Relationship to RFC-0002:** Priority 1 maps to the `broadly_safe` constraint group defined in RFC-0002 §2.1. Skills MAY declare `constraint: broadly_safe;` to make the requirement explicit, but it applies universally even when not declared.
 
 ---
 
@@ -302,14 +302,16 @@ The `reasoning` field MUST:
 
 ### 5. Constitutional Gating at the Micro Level
 
-Per RFC-0005 §4 amendments, constitutional gating applies at the micro (task) level as well as the macro (specification) level. This section specifies the micro-level gating rules.
+Constitutional gating applies at the micro (task) level as well as the macro (specification) level. This requirement emerges from RFC-0002 (Constitutional Governance Layer) and RFC-0005 (Singularity Protocol) applied to individual task execution.
 
-#### 5.1 Article VII — Irreversibility Gate
+> **Disambiguation**: The three runtime gates below are labeled VII, VIII, IX to follow YAMO constitutional article numbering. RFC-0002 also defines nine constitutional Articles (I–IX) governing software development principles (Library-First through Integration-First). RFC-0002's Articles VII–IX (Simplicity, Anti-Abstraction, Integration-First) operate at specification and planning time. The gates below operate at skill **execution** time. Both sets apply to a conformant YAMO agent; they are complementary, not conflicting.
+
+#### 5.1 Runtime Gate VII — Irreversibility Gate
 
 Before any task that produces an irreversible effect (file deletion, database mutation, external message send, network publication), the agent MUST pause and apply the Irreversibility Gate:
 
 ```
-IRREVERSIBILITY GATE (Article VII):
+IRREVERSIBILITY GATE (Runtime Gate VII):
 1. Is this action reversible within 24 hours without data loss?
 2. Does the user have explicit confirmation of what is about to happen?
 3. Is the scope bounded to what was requested (no blast radius expansion)?
@@ -319,23 +321,23 @@ IF any answer is NO → require explicit user confirmation before proceeding
 
 Agents MAY proceed without confirmation only when all three questions answer YES.
 
-#### 5.2 Article VIII — Scope Verification Gate
+#### 5.2 Runtime Gate VIII — Scope Verification Gate
 
 Before any task that could affect systems or data beyond the explicitly requested scope:
 
 ```
-SCOPE GATE (Article VIII):
+SCOPE GATE (Runtime Gate VIII):
 1. List all systems/files/services that will be affected
 2. Verify each is within the scope the user requested
 3. If any are outside scope → stop and clarify before proceeding
 ```
 
-#### 5.3 Article IX — Escalation Gate
+#### 5.3 Runtime Gate IX — Escalation Gate
 
 When a micro-level task reveals a fundamental problem with the macro-level plan — a design flaw, a safety risk not visible at specification time, or an ethical concern — the agent MUST escalate rather than silently proceed or silently fail.
 
 ```
-ESCALATION GATE (Article IX):
+ESCALATION GATE (Runtime Gate IX):
 IF task execution reveals: design flaw | safety risk | ethical concern
 THEN:
   1. STOP current task
@@ -428,7 +430,7 @@ Excessive refusal undermines user trust and drives workarounds that bypass the a
 - `yamo-os/lib/runtime/prompt-manager.ts` — `buildSkillExecutionPrompt()` method (lines 298–381)
 - `yamo-os/docs/constitutional-skill-review.md` — constitutional skill review checklist
 - RFC-0002 — Constitutional Governance Layer (syntax counterpart to this RFC)
-- RFC-0005 §4 — Singularity Protocol micro-level gating amendments
+- RFC-0005 — Singularity Protocol (Zero-JSON Mandate, Mandatory Meta-Reasoning; micro-level gating is specified in this RFC §5)
 - RFC-0007 — Semantic Heritage (FINAL phase reasoning → LessonLearned pipeline)
 
 ---
@@ -438,6 +440,7 @@ Excessive refusal undermines user trust and drives workarounds that bypass the a
 | Version | Date | Description |
 |---------|------|-------------|
 | 0.1.0 | 2026-02-21 | Initial draft — formalizes existing prompt-manager.ts constitutional system |
+| 0.1.1 | 2026-02-21 | Add RFC cross-references; rename §5 "Article VII/VIII/IX" to "Runtime Gate VII/VIII/IX" with disambiguation note to avoid collision with RFC-0002 specification-phase Articles VII–IX; fix phantom "RFC-0005 §4 amendments" reference; add `broadly_safe` constraint group reference to RFC-0002 §2.1 |
 
 ---
 

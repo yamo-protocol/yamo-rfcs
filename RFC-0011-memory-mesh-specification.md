@@ -3,7 +3,11 @@
 **Status:** Draft
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-18
+**Updated:** 2026-02-21
+**Implemented by:** `yamo-memory-mesh/` (`@yamo/memory-mesh` v3.1.1)
 **Depends on:** RFC-0005 (Singularity Protocol), RFC-0007 (Semantic Heritage & Wisdom Distillation)
+**Extended by:** RFC-0012 (S-MORA Retrieval Augmentation — 5-layer RAG pipeline built on top of RFC-0011 hybrid search)
+**Related:** RFC-0006 (Autonomous Kernel — heartbeat triggers wisdom distillation at PRIORITY_1 after GhostGuard at PRIORITY_0), RFC-0009 (Workspace File Format — workspace files are the human-readable layer; MemoryMesh is the semantic search layer)
 
 ---
 
@@ -862,6 +866,15 @@ Lessons with incorrect `preventativeRule` values could cause agents to adopt wro
 - [ ] `memory-mesh get --id <id>` CLI command
 - [ ] Wisdom distillation heartbeat hook
 - [ ] Schema V2 migration procedure
+
+---
+
+## Changelog
+
+| Version | Date | Description |
+|---------|------|-------------|
+| 0.1.0 | 2026-02-18 | Initial draft — LanceDB schema V1/V2, YAMO block wire formats, public API contract, search algorithm, Layer 0 Scrubber, Embedding Factory, Wisdom Distillation Cycle, CLI protocol, schema migration |
+| 0.1.1 | 2026-02-21 | Fix `Implemented by:` to `yamo-memory-mesh/`; add RFC-0006, RFC-0009, RFC-0012 cross-references |
 
 ---
 

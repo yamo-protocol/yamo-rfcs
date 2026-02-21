@@ -3,8 +3,9 @@
 **Status:** Draft
 **Author:** Soverane Labs
 **Created:** 2026-01-20
-**Updated:** 2026-01-20
+**Updated:** 2026-02-21
 **Supercedes:** RFC-0001 (YAMO v1.0) for governance features
+**Related:** RFC-0010 (Constitutional Value Hierarchy — runtime enforcement of these constraint groups and articles)
 
 ## Summary
 
@@ -68,7 +69,20 @@ metadata:
 
 #### 2.1 Definition
 
-Constraint groups are reusable constraint sets defined in `metadata` to eliminate repetition:
+Constraint groups are reusable constraint sets defined in `metadata` to eliminate repetition.
+
+**Constitutional constraint groups** (reserved; apply universally per RFC-0010):
+
+| Group | Maps to RFC-0010 Priority | Scope |
+|-------|--------------------------|-------|
+| `broadly_safe` | Priority 1 — Broadly Safe | Irreversible operations, human oversight |
+| `broadly_ethical` | Priority 2 — Broadly Ethical | Honesty, transparency, non-manipulation |
+| `guideline_compliant` | Priority 3 — Guideline Compliant | YAMO conventions, skill constraints |
+| `genuinely_helpful` | Priority 4 — Genuinely Helpful | Substantive value, no overcautious blocking |
+
+Skills MAY declare `constraint: broadly_safe;` or similar to make the requirement explicit, but these constraints apply universally at runtime regardless of declaration (see RFC-0010 §3).
+
+**Workflow constraint groups** (user-defined):
 
 ```yamo
 constraint_groups:
@@ -410,6 +424,15 @@ The following constraint groups are reserved and SHOULD NOT be overridden:
 | `core_tdd` | Test-driven development constraints |
 | `core_const` | Constitutional validation constraints |
 | `file_order` | Test file creation order |
+
+## Changelog
+
+| Version | Date | Description |
+|---------|------|-------------|
+| 0.1.0 | 2026-01-20 | Initial draft — constitutional governance layer |
+| 0.1.1 | 2026-02-21 | Add `broadly_safe`/`broadly_ethical`/`guideline_compliant`/`genuinely_helpful` constitutional constraint groups; add RFC-0010 cross-reference |
+
+---
 
 ## Copyright
 

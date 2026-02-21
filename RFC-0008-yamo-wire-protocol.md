@@ -182,7 +182,36 @@ All payloads are MessagePack-encoded maps. Field names are strings. Timestamps a
 { type: "quorum_lost" | "quorum_restored", node_count: integer, ts: ISO-8601 }
 ```
 
-#### 4.4 Skill Evolution Events (`skill:evolution`)
+#### 4.4 Kernel Channel Events (`kernel:{id}` — inbound from client)
+
+**advertise_capabilities** (client → server, topic `kernel:{id}`)
+```
+{
+  type:   "advertise_capabilities",
+  skills: string[]             // List of skill names this kernel can handle
+}
+```
+Response (phx_reply):
+```
+{ status: "ok", response: { registered: string[] } }
+```
+The bridge stores the skills list in `AgentRegistry` under the kernel's `capabilities` key. This enables skill routing via `AgentRegistry.find_by_skill/1`.
+
+#### 4.5 Skill Error (Dead-Letter) Events (`agent:lobby`)
+
+**skill_error** (server → client, broadcast on agent:lobby)
+```
+{
+  type:       "skill_error",
+  request_id: string,          // Matches the original invoke request_id
+  handler_id: string,          // The skill handler that was unavailable
+  reason:     "handler_unavailable" | "timeout" | "rate_limited",
+  ts:         ISO-8601
+}
+```
+Emitted when a skill invocation cannot be delivered (handler not registered, dead-letter). The client MUST reject any pending `invokeSkill()` promise matching `request_id` with an error indicating the failure reason.
+
+#### 4.6 Skill Evolution Events (`skill:evolution`)
 
 **skill_promoted**
 ```
@@ -206,7 +235,7 @@ All payloads are MessagePack-encoded maps. Field names are strings. Timestamps a
 }
 ```
 
-#### 4.5 Audit Event Format
+#### 4.7 Audit Event Format
 
 Every state-mutating operation MUST emit an audit event anchored to the Raft log index.
 
@@ -321,6 +350,15 @@ When a kernel loses bridge connectivity it enters **local-only mode**:
 - **Coordination plane:** `yamo-bridge/` (Elixir/Phoenix, planned Phase 1)
 - **Node.js client:** `yamo-os/lib/bridge/bridge-client.ts` (planned Phase 1)
 - **Phase 0 PoC:** Single GenServer + bare Phoenix Channel, no Raft
+
+---
+
+## Changelog
+
+| Version | Date | Description |
+|---------|------|-------------|
+| 0.1.0 | 2026-02-20 | Initial draft — transport, device auth, Phoenix channel topics, message formats, HTTP endpoints, JSON-RPC, streaming, local-only mode |
+| 0.1.1 | 2026-02-21 | Add `advertise_capabilities` inbound kernel event (§4.4) and `skill_error` dead-letter broadcast event (§4.5); renumber §4.5 Audit Event Format to §4.7 |
 
 ---
 
