@@ -376,6 +376,16 @@ Content-Type: text/plain; version=0.0.4 (Prometheus format)
 | `yamo_memory_entries_total` | Gauge | — | Total MemoryMesh entries |
 | `yamo_heartbeat_last_run_ts` | Gauge | — | Unix timestamp of last heartbeat |
 
+**Phase 0 limitation — `yamo_memory_entries_total`:**
+LanceDB/MemoryMesh runs in-process with `yamo-os` (Node.js). `yamo-bridge` (Elixir) has
+no direct read path into LanceDB and therefore always reports `yamo_memory_entries_total 0`.
+The authoritative value is exposed by `yamo-os GET /metrics`.
+
+Phase 1+ resolution: `yamo-os` SHOULD expose `GET /memory/count` (JSON: `{"count": N}`);
+`yamo-bridge` polls this endpoint on a configurable interval and caches via
+`Metrics.set(:memory_entries_total, n)`. Until then, consumers MUST use `yamo-os /metrics`
+for this gauge.
+
 #### 7.3 Log Levels and Format
 
 Both services use structured logging with the following levels:
