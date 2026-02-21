@@ -75,6 +75,22 @@ Where:
 - `reliability_score ∈ [0, 1]` — Bayesian reliability: `successes / (successes + failures + 1)`
 - `use_confidence ∈ [0, 1]` — normalized use count: `min(1, use_count / 100)`
 
+**Formula rationale and prior proposal resolution:**
+
+An earlier proposal (RFC-SYNTHESIS §2.5, 2026-02-18) used a time-decay formula:
+```
+reliability = success_rate × 0.5^(daysSinceUse / 30), floored at 0.3
+```
+
+This RFC (added as a formal amendment, 2026-02-18) adopts the simpler **Bayesian estimator** for the following reasons:
+
+1. **Cold-start stability**: The Bayesian `successes / (successes + failures + 1)` denominator prevents division-by-zero and produces a sensible prior (0.0) for a brand-new skill with no observations, without requiring a floor constant.
+2. **Recency is handled elsewhere**: The `use_confidence` factor (`min(1, use_count / 100)`) already down-weights underused skills. Adding an exponential time decay on top creates double-penalization of infrequently-used but historically reliable skills.
+3. **Fewer hyperparameters**: The time-decay formula requires tuning `daysSinceUse / 30` (half-life) and a floor constant `0.3`. The Bayesian formula has no free parameters.
+4. **Interpretability**: `successes / (successes + failures + 1)` is directly interpretable as a smoothed success rate. The time-decay formula conflates reliability with recency in a non-transparent way.
+
+The RFC-SYNTHESIS formula is **superseded** by the formula in this RFC. Implementations MUST use the Bayesian estimator defined here.
+
 **Threshold semantics:**
 
 | Context | Threshold | Rationale |
@@ -127,7 +143,7 @@ By placing the boot logic in a protocol-native file (`BOOTSTRAP.yamo`) and self-
 |---------|------|-------------|
 | 0.1.0 | 2026-02-17 | Initial draft — Autonomous Kernel, Ghost Protection, Hardened Kernel Architecture |
 | 0.1.1 | 2026-02-18 | Add InterceptionEngine scoring formula (§4) and StochasticSelector Shannon entropy normalization (§5) as amendments |
-| 0.1.2 | 2026-02-21 | Add RFC cross-references; clarify dual bootstrap variants (BOOTSTRAP.yamo vs BOOTSTRAP.md per RFC-0009) |
+| 0.1.2 | 2026-02-21 | Add RFC cross-references; clarify dual bootstrap variants (BOOTSTRAP.yamo vs BOOTSTRAP.md per RFC-0009); add formula rationale note to §4 resolving conflict with RFC-SYNTHESIS §2.5 time-decay proposal — Bayesian estimator is authoritative |
 
 ---
 

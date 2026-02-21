@@ -325,6 +325,60 @@ When a kernel loses bridge connectivity it enters **local-only mode**:
 - Skill execution and memory retrieval continue uninterrupted
 - Bridge reconnect attempted every 10 seconds with exponential backoff (max 60s)
 
+#### 8.1 Security Degradation: Audit Provenance Loss in Local-Only Mode
+
+**Known security degradation**: When operating in local-only mode, audit events are emitted with `raft_log_index: 0` (the bridge-unavailable sentinel). This is a **deliberate availability-over-integrity tradeoff** with the following consequences:
+
+| Property | Bridge Connected | Local-Only Mode |
+|----------|-----------------|-----------------|
+| Audit event emitted | ✅ Yes | ✅ Yes |
+| Raft log index | ✅ Monotonic, tamper-evident | ⚠️ Always `0` — not tamper-evident |
+| Causal ordering | ✅ Guaranteed by Raft | ❌ Not guaranteed |
+| Cross-kernel provenance | ✅ Anchored to consensus log | ❌ Lost — local sequence only |
+
+**Implications for security-sensitive deployments:**
+
+1. Audit trails produced in local-only mode MUST be treated as **best-effort, not tamper-evident**. They record that events occurred but cannot cryptographically prove ordering or completeness.
+2. Implementations that require tamper-evident audit trails (regulatory compliance, forensic use) MUST either: (a) refuse to operate in local-only mode, or (b) re-anchor queued audit events to the Raft log after bridge reconnection.
+3. The `raft_log_index: 0` sentinel in an audit event is a **red flag** in forensic analysis — it indicates bridge unavailability at that point, not sequence position 0.
+
+Re-anchoring on reconnection (RECOMMENDED for high-assurance deployments):
+
+```
+On bridge reconnect:
+  1. Flush queued audit events to bridge
+  2. Request Raft log index assignment for each event (in causal order)
+  3. Update stored audit events with real raft_log_index values
+  4. Mark re-anchored events with metadata: { reanchored: true, reanchor_ts: ISO-8601 }
+```
+
+---
+
+### 9. Raft Implementation Constraints
+
+The coordination plane (`yamo-bridge`) MUST use the **`:ra` OTP Raft library** (github.com/rabbitmq/ra) as the Raft implementation. `:ra` is the same library used by RabbitMQ Quorum Queues and is battle-tested in high-throughput BEAM production environments.
+
+#### 9.1 `:ra` Configuration Defaults
+
+| Parameter | Default | Notes |
+|-----------|---------|-------|
+| Election timeout | 1000–3000ms (randomized) | `:ra` default; prevents split votes |
+| Heartbeat interval | 200ms | Leader → followers |
+| Max pipeline | 1000 entries | Entries awaiting acknowledgment |
+| Log segment size | 512 KB | Before new segment is started |
+| Log compaction trigger | 4096 entries | Snapshot taken, log truncated |
+| Snapshot chunk size | 4 MB | For cross-node snapshot transfer |
+
+Implementations MUST NOT reduce `election_timeout` below 500ms in production. Aggressive timeouts in high-latency networks cause spurious leader elections.
+
+#### 9.2 Cluster Naming Convention
+
+Raft machine name: `:yamo_cluster` (atom). Server IDs follow the pattern `{:yamo_cluster, node_atom}` where `node_atom` is the Erlang node name (e.g. `:"yamo@node1"`). See RFC-0013 §5 for cluster bootstrap procedure.
+
+#### 9.3 Log Compaction and Audit Retention
+
+`:ra` compaction removes Raft log entries older than the last snapshot. **Audit events anchored to compacted log indices remain valid** — the `raft_log_index` field is a provenance timestamp, not a dereferenceable pointer. Implementations MUST NOT attempt to replay log entries from `raft_log_index` values; they are used only for causal ordering and tamper-evidence of contemporaneous events.
+
 ---
 
 ## Backwards Compatibility
@@ -359,6 +413,7 @@ When a kernel loses bridge connectivity it enters **local-only mode**:
 |---------|------|-------------|
 | 0.1.0 | 2026-02-20 | Initial draft — transport, device auth, Phoenix channel topics, message formats, HTTP endpoints, JSON-RPC, streaming, local-only mode |
 | 0.1.1 | 2026-02-21 | Add `advertise_capabilities` inbound kernel event (§4.4) and `skill_error` dead-letter broadcast event (§4.5); renumber §4.5 Audit Event Format to §4.7 |
+| 0.1.2 | 2026-02-21 | Add §8.1 Security Degradation callout for local-only mode audit provenance loss (`raft_log_index: 0`); add §9 Raft Implementation Constraints (`:ra` library, defaults, log compaction) |
 
 ---
 

@@ -398,6 +398,50 @@ ELSE:
 
 If any step in phase 2 fails, the agent MUST still attempt step 3 (deletion) to prevent bootstrap instructions from persisting. If deletion itself fails, the agent MUST log the failure and warn the user.
 
+#### 6.3 Kernel Enforcement of Bootstrap Deletion
+
+**Security invariant**: The BOOTSTRAP.md deletion guarantee in §6.2 step 3 MUST NOT rely solely on LLM agent compliance. An LLM agent can be interrupted, hallucinate, or fail between steps — leaving BOOTSTRAP.md on disk with its sensitive setup instructions intact. Kernel-level code MUST enforce deletion independently.
+
+**Required implementation pattern — pre-boot guard:**
+
+```
+On every kernel startup (before loading the LLM agent):
+  1. Check for BOOTSTRAP.md existence via filesystem stat() syscall
+  2. IF BOOTSTRAP.md exists:
+     a. Read and hold content in memory (for agent execution)
+     b. DELETE BOOTSTRAP.md via unlink() syscall — kernel-controlled, not agent-delegated
+     c. Verify deletion succeeded (stat() returns ENOENT)
+     d. IF deletion failed: REFUSE boot; surface error to user; do not proceed
+     e. THEN start the agent with bootstrap content passed as context
+  3. IF BOOTSTRAP.md does not exist: proceed with normal startup
+```
+
+**Security rationale:**
+
+- `unlink()` is a kernel syscall with atomicity guarantees that LLM text generation does not have
+- The deletion occurs *before* the agent sees the content, eliminating the window where bootstrap instructions persist post-execution
+- The kernel holds the content in-process memory (not on disk) for the duration of the bootstrap session only
+- If deletion fails (permissions, read-only filesystem), the kernel MUST refuse to start rather than proceeding with BOOTSTRAP.md still present
+
+**Implementation note for `yamo-os`:**
+
+The `YamoKernel` startup sequence in `yamo-os/lib/kernel/kernel.ts` MUST implement this guard before `_onBridgeConnected()` or any agent initialization. A reference implementation pattern:
+
+```typescript
+// kernel.ts — pre-boot guard (normative)
+const bootstrapPath = path.join(workspaceDir, 'BOOTSTRAP.md');
+if (fs.existsSync(bootstrapPath)) {
+  const content = fs.readFileSync(bootstrapPath, 'utf-8');
+  fs.unlinkSync(bootstrapPath);                    // syscall-level deletion
+  if (fs.existsSync(bootstrapPath)) {
+    throw new Error('BOOTSTRAP.md deletion failed — refusing boot');
+  }
+  await this._executeBootstrap(content);           // agent sees content in-memory only
+}
+```
+
+This pattern eliminates the class of failure where an agent successfully processes BOOTSTRAP.md but fails to delete it.
+
 ---
 
 ### 7. Backwards Compatibility
@@ -455,6 +499,8 @@ See §4 above. The critical invariants are:
 | Version | Date | Description |
 |---------|------|-------------|
 | 0.1.0 | 2026-02-21 | Initial draft — formalizes existing yamo-os workspace convention |
+| 0.1.1 | 2026-02-21 | Add RFC-0004/0006/0011 cross-references; Supersedes RFC-0004 §2 |
+| 0.1.2 | 2026-02-21 | Add §6.3 Kernel Enforcement of Bootstrap Deletion — pre-boot guard pattern; deletion MUST be kernel syscall, not LLM agent compliance |
 
 ---
 
