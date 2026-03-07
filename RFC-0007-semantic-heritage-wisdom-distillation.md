@@ -66,6 +66,14 @@ Before any high-priority `handoff;`, the kernel should invoke the `SubconsciousR
 - **Query**: Search MemoryMesh for similar past oversights.
 - **Inject**: Automatically append preventative constraints to the current agent's context.
 
+#### §4.1 Semantic Search Mandate
+
+The `SubconsciousReflector` MUST employ **Semantic Similarity Search** (embedding-based vector search) for all MemoryMesh queries. 
+
+- **Rationale**: Simple keyword-only tag matching (`#lesson_learned`) is insufficient for discovering lessons from dissimilar contexts that share an underlying failure pattern. 
+- **Requirement**: Both mechanisms SHOULD be combined: semantic similarity ranking prioritized first, with optional tag filtering as a secondary constraint.
+- **Enhancement**: When S-MORA (RFC-0012) is available, the `SubconsciousReflector` SHOULD use the full 5-layer retrieval pipeline (HyDE-Lite, RRF Fusion, etc.) to maximize lesson relevance.
+
 ## Rationale
 
 Semantic Heritage prevents "Intent Decay" in long-running projects. Wisdom Distillation ensures the agent's MemoryMesh remains high-density and actionable, rather than becoming a graveyard of raw logs.

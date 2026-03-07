@@ -1,9 +1,10 @@
 # RFC-0011: @yamo/memory-mesh — Semantic Memory System Specification
 
-**Status:** Draft
+**Status:** Implemented (core API + heartbeat trigger); Partial (CLI uses JSON positional format, not named-flag format)
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-18
 **Updated:** 2026-02-21
+**Last Verified:** 2026-03-05
 **Implemented by:** `yamo-memory-mesh/` (`@yamo/memory-mesh` v3.1.1)
 **Depends on:** RFC-0005 (Singularity Protocol), RFC-0007 (Semantic Heritage & Wisdom Distillation)
 **Extended by:** RFC-0012 (S-MORA Retrieval Augmentation — 5-layer RAG pipeline built on top of RFC-0011 hybrid search)
@@ -593,7 +594,9 @@ This section specifies the previously undocumented heartbeat-triggered distillat
 
 #### 8.1 Trigger
 
-The distillation cycle runs as part of the kernel heartbeat (RFC-0006), at **PRIORITY_1** (after GhostGuard at PRIORITY_0), **2–4 times per day**.
+The distillation cycle runs as part of the kernel heartbeat (RFC-0006), **on every heartbeat invocation when failures are detected** (up to 3 per heartbeat, idempotent). Implemented in `yamo-os/lib/kernel/kernel.ts` (`heartbeat()` method, step 2 — "Wisdom Distillation Cycle"). The heartbeat is invoked periodically by `daemon.ts`.
+
+> **Implementation note:** The original spec described 2–4 times/day. The actual trigger is failure-driven (not time-driven): each `heartbeat()` call scans for failures (`FailureAnalyzer.scan(50)`) and calls `brain.distillLesson()` for up to 3 failures found. Heartbeat frequency is controlled by `daemon.ts`.
 
 #### 8.2 Algorithm
 
@@ -638,11 +641,33 @@ async distillLesson(context: LessonContext): Promise<LessonBlock>
 
 ---
 
-### 9. Zero-JSON CLI Protocol
+### 9. CLI Protocol
 
-The CLI MUST use named flags for all operations. Positional JSON arguments are prohibited (Zero-JSON Mandate, RFC-0005).
+> **Implementation note:** The current CLI (`lib/memory/memory-mesh.js` / `tools/memory_mesh.js`) uses
+> a **positional JSON argument format**, not the named-flag format specified below. Named-flag CLI is
+> the target format per RFC-0005 Zero-JSON Mandate, but is not yet implemented. Callers should use
+> the JSON action format for now (see §9.1 Implemented Format).
 
-#### 9.1 Command Reference
+#### 9.1 Implemented CLI Format
+
+The actual CLI accepts the action name as the first argument and a JSON object as the second:
+
+```
+node tools/memory_mesh.js ingest   '{"content": "...", "metadata": {...}}'
+node tools/memory_mesh.js store    '{"content": "...", "metadata": {...}}'
+node tools/memory_mesh.js search   '{"query": "...", "limit": 10}'
+node tools/memory_mesh.js synthesize '{"topic": "..."}'
+node tools/memory_mesh.js stats    '{}'
+node tools/memory_mesh.js ingest-skill '{"yamo_text": "..."}'
+node tools/memory_mesh.js search-skills '{"query": "...", "limit": 5}'
+node tools/memory_mesh.js skill-feedback '{"id": "...", "success": true}'
+node tools/memory_mesh.js skill-prune '{"threshold": 0.3}'
+node tools/memory_mesh.js get    '{"id": "<id>"}'
+node tools/memory_mesh.js delete '{"id": "<id>"}'
+node tools/memory_mesh.js reflect '{"topic": "<optional>", "lookback": 10}'
+```
+
+#### 9.2 Target CLI Format (Zero-JSON — PLANNED)
 
 ```
 memory-mesh store --content <text> [--type <type>] [--rationale <text>]
@@ -673,7 +698,7 @@ memory-mesh skill-feedback --id <id> --success <true|false>
 memory-mesh skill-prune [--threshold <0.0-1.0>]
 ```
 
-#### 9.2 Output Format
+#### 9.3 Output Format
 
 **`store` output:**
 ```
@@ -707,7 +732,7 @@ Type: {type} | Source: {source}
 [MemoryMesh] Deleted record {MEMORY_ID}
 ```
 
-#### 9.3 Error Output
+#### 9.4 Error Output
 
 All errors MUST be written to stderr. Exit code MUST be non-zero on failure.
 
@@ -856,16 +881,23 @@ Lessons with incorrect `preventativeRule` values could cause agents to adopt wro
 - **Scrubber**: `/home/dev/workspace/yamo-memory-mesh/lib/scrubber/scrubber.ts`
 - **E2E tests**: `/home/dev/workspace/yamo-memory-mesh/test/e2e/cli.test.ts`
 
-**Implementation gaps** (required before RFC-0011 reaches Final status):
-- [ ] `MemoryMesh.delete(id)` — not yet implemented
-- [ ] `MemoryMesh.distillLesson(context)` — not yet implemented
-- [ ] `MemoryMesh.queryLessons(query, options)` — not yet implemented
-- [ ] `MemoryMesh.insertHeritage(memoryId, heritage)` — not yet implemented
-- [ ] `memory-mesh delete --id <id>` CLI command
-- [ ] `memory-mesh reflect` CLI command
-- [ ] `memory-mesh get --id <id>` CLI command
-- [ ] Wisdom distillation heartbeat hook
-- [ ] Schema V2 migration procedure
+**Implementation status** (verified 2026-03-05):
+
+Implemented:
+- [x] `MemoryMesh.delete(id)` — `memory-mesh.ts:1349`
+- [x] `MemoryMesh.distillLesson(context)` — `memory-mesh.ts:1366`; full LessonLearned YAMO block wire format
+- [x] `MemoryMesh.queryLessons(query, options)` — `memory-mesh.ts:1450`
+- [x] `MemoryMesh.insertHeritage(memoryId, heritage)` — `memory-mesh.ts:1482`; emits heritage YAMO block
+- [x] `MemoryMesh.getMemoriesByPattern(patternId)` — `memory-mesh.ts:1518`
+- [x] `MemoryMesh.reflect()` / `MemoryMesh.synthesize()` — implemented
+- [x] Wisdom distillation heartbeat hook — `yamo-os/lib/kernel/kernel.ts:980` (`heartbeat()` step 2)
+
+Still pending (required before RFC-0011 reaches Final status):
+- [x] `memory-mesh get` CLI action — wired to `run()` in `memory-mesh.ts` (2026-03-06)
+- [x] `memory-mesh delete` CLI action — wired to `run()` in `memory-mesh.ts` (2026-03-06)
+- [x] `memory-mesh reflect` CLI action — wired to `run()` in `memory-mesh.ts` (2026-03-06)
+- [ ] Named-flag CLI format (Zero-JSON Mandate) — current CLI uses JSON positional args
+- [ ] Schema V2 migration procedure — V2 schema fields defined; migration code not implemented
 
 ---
 
@@ -875,6 +907,8 @@ Lessons with incorrect `preventativeRule` values could cause agents to adopt wro
 |---------|------|-------------|
 | 0.1.0 | 2026-02-18 | Initial draft — LanceDB schema V1/V2, YAMO block wire formats, public API contract, search algorithm, Layer 0 Scrubber, Embedding Factory, Wisdom Distillation Cycle, CLI protocol, schema migration |
 | 0.1.1 | 2026-02-21 | Fix `Implemented by:` to `yamo-memory-mesh/`; add RFC-0006, RFC-0009, RFC-0012 cross-references |
+| 0.2.0 | 2026-03-05 | Verification pass against live implementation. Status updated. §8.1 trigger corrected to failure-driven (not time-driven); wired to `kernel.ts:heartbeat()`. §9 CLI section split into Implemented (JSON positional) and Target (named-flag/PLANNED). Implementation gaps updated: `delete`, `distillLesson`, `queryLessons`, `insertHeritage`, `getMemoriesByPattern`, heartbeat hook all confirmed implemented. Remaining gaps: CLI action wiring + named-flag format + V2 migration. |
+| 0.3.0 | 2026-03-06 | CLI action wiring complete: `get`, `delete`, `reflect` wired into `memory-mesh.ts:run()`. §9.1 examples updated to include all three actions. Gap list updated — 3 items closed, 2 remaining (named-flag format, V2 migration). 13 new tests in `test/unit/cli-run-actions.test.ts`. |
 
 ---
 

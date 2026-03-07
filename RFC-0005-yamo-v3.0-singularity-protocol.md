@@ -3,7 +3,7 @@
 **Status:** Draft
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-17
-**Updated:** 2026-02-21
+**Updated:** 2026-03-07
 **Supercedes:** RFC-0001, RFC-0002, RFC-0003 (for v3.0 features)
 **Related:** RFC-0006 (Autonomous Kernel — InterceptionEngine and StochasticSelector specs), RFC-0010 (Constitutional Value Hierarchy — runtime constitutional gating at micro level)
 
@@ -67,6 +67,19 @@ capabilities:
 ---
 ```
 
+#### §2.1 Valid Agent Block Keys
+
+In addition to the core agent block fields (`intent:`, `context:`, `constraints:`, `output:`, `log:`, `priority:`, `meta:`, `handoff:`), the following optional keys are valid in v3.0 agent blocks:
+
+| Key | Purpose | Defined In |
+|-----|---------|------------|
+| `preserve:` | Named items that MUST be reproduced verbatim — conditional branches, exact paths, multi-option content | RFC-0003 §6.2 |
+| `procedure:` | Ordered numbered steps that MUST NOT be collapsed to a summary — sequential checklists and workflows | RFC-0003 §6.3 |
+
+Both keys address the **LLM-as-parser compression failure** modes identified during v3.0 production deployment: verbatim templates, ordered procedures, and conditional branches are systematically degraded when represented as flat constraint items. These keys signal to the executing LLM that the content is non-compressible.
+
+See RFC-0003 §6 for the complete Verbatim Preservation Primitives specification, including the `;verbatim;` constraint modifier and YAML literal block scalar (`key: |`) patterns.
+
 ### 3. Formal Intent Semantics
 
 Agent intents are no longer descriptive text; they are formal, underscored identifiers that map to the agent's cognitive capabilities.
@@ -78,6 +91,65 @@ Every agent execution must produce a `meta` block containing:
 - `rationale`: The justification for the chosen path.
 - `confidence`: Numeric score (0.0-1.0).
 - `observation`: Post-execution findings.
+
+### 5. InterceptionEngine Decision Matrix
+
+The Singularity Kernel employs a multi-factor weighted scoring system to determine when a user command or agent intent should be intercepted by a synthesized skill.
+
+#### §5.1 Weighted Scoring Formula
+
+The final `weightedScore` for a skill candidate is calculated as follows:
+
+```
+weightedScore = 
+  0.6 × semanticScore + 
+  0.3 × reliability(skill) + 
+  0.1 × useConfidence(skill)
+```
+
+Where:
+- **semanticScore**: Vector similarity from LanceDB embedding search [0, 1].
+- **reliability**: `success_rate × 0.5^(daysSinceLastUse / 30)`, floored at 0.3.
+- **useConfidence**: `log(useCount + 1) / log(100 + 1)`, capped at 1.0.
+
+#### §5.2 Decision Gates
+
+Candidates are evaluated through a sequence of gates:
+1.  **Parameter Check**: If required parameters are missing → **BLOCK**.
+2.  **Self-Interception**: If the intent originates from the skill itself (recursion) → **BLOCK**.
+3.  **Core Commands**: If the command is a core system command, `weightedScore` must be ≥ 0.85.
+4.  **User Commands**: If the command is a user-defined intent, `weightedScore` must be ≥ 0.35.
+5.  **Reliability Floor**: If `reliability` < 0.5 → **BLOCK** (unless overridden by manual bypass).
+
+### 6. StochasticSelector & Shannon Entropy
+
+To prevent "agentic stagnation" and ensure system diversity, the kernel uses probabilistic selection for non-critical skills, governed by Shannon Entropy.
+
+#### §6.1 Normalized Shannon Entropy (H_norm)
+
+Diversity in the candidate pool is measured via Normalized Shannon Entropy:
+
+```
+H_norm = -Σ p(i) × log2(p(i)) / log2(k)
+```
+
+Where:
+- **k**: Number of unique skills in the candidate pool.
+- **H_norm ∈ [0, 1]**: 0 = deterministic (exploitation), 1 = maximum diversity (exploration).
+
+#### §6.2 Softmax Sampling
+
+The selection probability for a skill is adjusted based on the current system entropy:
+
+1.  **Exponential Scores**: `expScores = [exp(score / temp) for each candidate score]`.
+2.  **Base Probabilities**: `probs = softmax(expScores)`.
+3.  **Entropy Weighting**: `adjustedProbs = (1 - H_norm) × probs + H_norm / k`.
+
+#### §6.3 Entropy Adaptation
+
+The system automatically tunes its "curiosity" (target entropy) based on recent performance:
+- **Explore**: If `successRate > 0.7` and `H_norm < 0.2` → Increase `targetEntropy` (encourage diversity).
+- **Exploit**: If `successRate < 0.4` and `H_norm > 0.6` → Decrease `targetEntropy` (favor high-reliability skills).
 
 ## Rationale
 
@@ -99,6 +171,7 @@ Moving to a protocol-native architecture eliminates the "translation layer" betw
 |---------|------|-------------|
 | 0.1.0 | 2026-02-17 | Initial draft — Zero-JSON Mandate, YAMO Frontmatter, Formal Intent Semantics, Mandatory Meta-Reasoning |
 | 0.1.1 | 2026-02-21 | Add RFC-0006 and RFC-0010 cross-references; §1.1 Scope Clarification was added to resolve Zero-JSON tension with TypeScript implementation layer |
+| 0.1.2 | 2026-03-07 | Add §2.1 Valid Agent Block Keys — `preserve:` and `procedure:` formally recognized as optional v3.0 agent block fields; cross-reference RFC-0003 §6 Verbatim Preservation Primitives |
 
 ---
 

@@ -3,7 +3,7 @@
 **Status:** Draft
 **Author:** Soverane Labs
 **Created:** 2026-01-20
-**Updated:** 2026-02-21
+**Updated:** 2026-03-07
 **Supercedes:** RFC-0001 (YAMO v1.0) for governance features
 **Related:** RFC-0010 (Constitutional Value Hierarchy — runtime enforcement of these constraint groups and articles)
 
@@ -181,6 +181,8 @@ constraints:
 | `constitution;` | Reference constitutional articles | Optional |
 | `use_group;` | Reference a constraint group | With constraints; |
 | `NON_NEGOTIABLE;` | Mark constraints as inviolable | With article_iii; |
+
+> **See also**: RFC-0003 §6 — Verbatim Preservation Primitives (`preserve:`, `procedure:`, `;verbatim;` modifier, YAML literal block scalars). These primitives complement constitutional constraint groups by protecting procedural content, ordered workflows, and verbatim templates from LLM-as-parser compression during skill execution.
 
 ### 6. Backwards Compatibility
 
@@ -431,6 +433,7 @@ The following constraint groups are reserved and SHOULD NOT be overridden:
 |---------|------|-------------|
 | 0.1.0 | 2026-01-20 | Initial draft — constitutional governance layer |
 | 0.1.1 | 2026-02-21 | Add `broadly_safe`/`broadly_ethical`/`guideline_compliant`/`genuinely_helpful` constitutional constraint groups; add RFC-0010 cross-reference |
+| 0.1.2 | 2026-03-07 | Add RFC-0003 §6 cross-reference in §5 New Keywords — verbatim preservation primitives complement constitutional constraint groups |
 
 ---
 

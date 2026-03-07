@@ -1,8 +1,9 @@
 # RFC-0008: YAMO Wire Protocol v1
 
-**Status:** Draft
+**Status:** Implemented (core); Partial (evolution topics)
 **Authors:** Soverane Labs
 **Created:** 2026-02-20
+**Last Verified:** 2026-03-05
 **Implemented by:** `yamo-bridge/` (Elixir), `lib/bridge/bridge-client.ts` (Node.js)
 
 ---
@@ -109,14 +110,14 @@ Response: { rotated: true, kernel_id: string, rotated_at: ISO-8601 }
 
 All real-time communication uses the following named topics. Clients subscribe to relevant topics after authentication.
 
-| Topic | Direction | Description |
-|---|---|---|
-| `agent:lobby` | Server → Client | Agent registry broadcasts (register, update, kill) |
-| `agent:{id}` | Bidirectional | Per-agent events scoped to a single agent |
-| `kernel:{id}` | Bidirectional | Per-kernel heartbeat, drift, and evolution events |
-| `cluster:consensus` | Server → Client | Raft leadership changes, quorum events, cluster health |
-| `skill:evolution` | Server → Client | Skill promotion/demotion broadcast to all kernels |
-| `memory:query` | Bidirectional | Routed memory queries (Phase 3 memory routing) |
+| Topic | Direction | Description | Status |
+|---|---|---|---|
+| `agent:lobby` | Server → Client | Agent registry broadcasts (register, update, kill) | ✅ Implemented |
+| `agent:{id}` | Bidirectional | Per-agent events scoped to a single agent | ✅ Implemented |
+| `kernel:{id}` | Bidirectional | Per-kernel heartbeat, drift, and evolution events | ✅ Implemented |
+| `cluster:main` | Server → Client | Cluster health and membership events. **Note:** Implementation uses `cluster:main`; this RFC originally specified `cluster:consensus`. | ✅ Implemented |
+| `skill:{name}` | Bidirectional | Per-skill invocation channel. **Note:** Implementation uses per-skill topics `skill:{skillName}`; `skill:evolution` broadcast channel is not yet implemented. | ✅ Partial |
+| `memory:shared` | Bidirectional | Cross-kernel lesson federation (broadcast). **Note:** Implementation uses `memory:shared` for broadcast federation; the `memory:query` RPC-style topic is not implemented. | ✅ Implemented |
 
 #### 3.1 Topic Join
 
@@ -177,22 +178,23 @@ All payloads are MessagePack-encoded maps. Field names are strings. Timestamps a
 **heartbeat**
 ```
 {
-  type:           "heartbeat",
-  kernel_id:      string,
-  agent_count:    integer,
-  entropy:        float,       // Current Shannon entropy from EntropyMeter
-  drift_score:    float,       // Current drift from EvolutionGovernor
-  memory_count:   integer,     // MemoryMesh total memories
-  ts:             ISO-8601
+  t0:           integer,       // Send timestamp — Unix epoch in microseconds (Date.now() * 1000)
+  agent_count:  integer,       // (optional) Active agent count — included when load metrics available
+  entropy:      float,         // (optional) Shannon entropy from EntropyMeter
+  memory_count: integer        // (optional) MemoryMesh total memories
 }
 ```
+
+> **Note:** `type: "heartbeat"` is the Phoenix Channel event name (the `push` event key), not a field in
+> the payload map. The bridge handler (`handle_in("heartbeat", ...)`) extracts `entropy`, `agent_count`,
+> and `memory_count` from the payload when present to update `LoadMetrics`. Only `t0` is always present.
 
 **bridge_connected / bridge_disconnected**
 ```
 { type: "bridge_connected" | "bridge_disconnected", kernel_id: string, ts: ISO-8601 }
 ```
 
-#### 4.3 Consensus Events (`cluster:consensus`)
+#### 4.3 Cluster Events (`cluster:main`)
 
 **leader_elected**
 ```
@@ -238,9 +240,14 @@ The bridge stores the skills list in `AgentRegistry` under the kernel's `capabil
 ```
 Emitted when a skill invocation cannot be delivered (handler not registered, dead-letter). The client MUST reject any pending `invokeSkill()` promise matching `request_id` with an error indicating the failure reason.
 
-#### 4.6 Skill Evolution Events (`skill:evolution`)
+#### 4.6 Skill Evolution Events (`skill:evolution`) — PLANNED
 
-**skill_promoted**
+> **Implementation status: Not yet implemented.** The `skill:evolution` broadcast topic and the
+> `skill_promoted` / `skill_demoted` event types are specified here for future implementation.
+> Per-skill invocation channels (`skill:{name}`) are implemented; the evolution broadcast channel
+> is not. Kernels MUST NOT emit or subscribe to `skill:evolution` until this section is marked Implemented.
+
+**skill_promoted** _(planned)_
 ```
 {
   type:           "skill_promoted",
@@ -252,7 +259,7 @@ Emitted when a skill invocation cannot be delivered (handler not registered, dea
 }
 ```
 
-**skill_demoted**
+**skill_demoted** _(planned)_
 ```
 {
   type:       "skill_demoted",
@@ -443,6 +450,7 @@ Raft machine name: `:yamo_cluster` (atom). Server IDs follow the pattern `{:yamo
 | 0.1.1 | 2026-02-21 | Add `advertise_capabilities` inbound kernel event (§4.4) and `skill_error` dead-letter broadcast event (§4.5); renumber §4.5 Audit Event Format to §4.7 |
 | 0.1.2 | 2026-02-21 | Add §8.1 Security Degradation callout for local-only mode audit provenance loss (`raft_log_index: 0`); add §9 Raft Implementation Constraints (`:ra` library, defaults, log compaction) |
 | 0.1.3 | 2026-02-21 | §2 rewritten to canonize implemented auth scheme: hex public keys, `session_id:timestamp_ms:sig_hex` token format, 30s timestamp freshness window (replaces HTTP-layer challenge-response); add §2.4 Key Rotation; add `POST /auth/rotate` to §5 endpoints table; add implementation rationale for freshness-over-challenge design decision |
+| 0.2.0 | 2026-03-05 | Verification pass against live implementation. Status updated to Implemented (core)/Partial (evolution). Topic table corrected: `cluster:consensus`→`cluster:main`, `memory:query`→`memory:shared`, `skill:evolution` marked unimplemented. §4.2 heartbeat payload corrected: `t0` (microseconds) replaces `drift_score`/`ts`; load fields marked optional. §4.3 heading corrected to `cluster:main`. §4.6 evolution events marked PLANNED. |
 
 ---
 

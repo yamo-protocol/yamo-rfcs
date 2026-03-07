@@ -3,7 +3,7 @@
 **Status:** Draft
 **Author:** Soverane Labs
 **Created:** 2026-01-20
-**Updated:** 2026-01-20
+**Updated:** 2026-03-07
 **Supercedes:** RFC-0001 (YAMO v1.0) for optimization features
 
 ## Summary
@@ -214,6 +214,141 @@ Constraints use abbreviated key-value pairs:
 | `templates;` | Centralize path references | metadata |
 | `use_group;` | Reference a constraint group | constraints |
 | `ref;` | Reference a meta-pattern | meta |
+| `preserve;` | Verbatim content that must not be summarized | agent block |
+| `procedure;` | Ordered multi-step workflow that must not collapse | agent block |
+| `;verbatim;` | Constraint item modifier — exact phrasing required | constraints items |
+
+### 6. Verbatim Preservation Primitives
+
+Token optimization (§1–4) reduces file size by eliminating redundancy. Verbatim preservation is the complementary concern: certain content must survive the LLM-as-parser round-trip without compression or paraphrase. These primitives make that intent explicit to the parser.
+
+#### 6.1 Motivation
+
+The LLM-as-parser model is YAMO's core design. It produces a class of failure distinct from token waste: **lossy compression of semantically load-bearing content**. Three specific patterns degrade reliably:
+
+1. **Multi-line verbatim templates** (PR bodies, commit message templates, shell heredocs) — compressed to one-line summaries, losing the exact text the user must copy
+2. **Ordered procedures** (numbered checklists, self-review steps, sequential workflows) — collapsed from N explicit steps to a single "follow the checklist" entry
+3. **Conditional branches** (if/else logic, environment detection) — resolved to a single path, dropping the other branches
+
+These failures are not format errors — the YAMO syntax is valid — but the semantic content is lost. Verbatim preservation primitives give authors a way to signal "this content must not be compressed."
+
+#### 6.2 `preserve;` Block
+
+A `preserve:` block holds named items that the LLM MUST reproduce verbatim, not infer or paraphrase.
+
+```yamo
+agent: CommitsAndPRs;
+...
+preserve:
+  - fork_check_branch_a;if_origin_does_not_point_to_apache/airflow;use_origin_as_fork_remote;verbatim;
+  - fork_check_branch_b;if_origin_points_to_apache/airflow;look_for_other_remote_pointing_to_user_fork;verbatim;
+  - fork_check_branch_c;if_no_fork_remote_exists;gh repo fork apache/airflow --remote --remote-name fork;verbatim;
+```
+
+**Semantics:** Items in `preserve:` carry stronger reproduction guarantees than `constraints:`. The parser MUST NOT rephrase them. Content in `preserve:` is for exact reproduction, not enforcement.
+
+**When to use:** Conditional branches with multiple distinct resolution paths. Each branch is a separate `preserve:` item — never collapsed to one.
+
+#### 6.3 `procedure;` Block
+
+A `procedure:` block holds numbered ordered steps that MUST NOT be collapsed into a summary.
+
+```yamo
+agent: CommitsAndPRs;
+...
+procedure:
+  self_review:
+    1;git diff main...HEAD;verify_every_change_intentional;remove_unrelated_changes;
+    2;read_code_review_checklist;check_against_every_rule;architecture_boundaries,database_correctness,code_quality;verbatim;
+    3;confirm_code_follows_coding_standards_and_architecture_boundaries;
+    4;prek run --from-ref <target_branch> --hook-stage pre-commit;fix_any_failures;verbatim;
+    5;prek run --from-ref <target_branch> --hook-stage manual;fix_any_failures;verbatim;
+    6;run_relevant_individual_tests;confirm_they_pass;
+    7;breeze selective-checks;run_tests_in_parallel;check_for_CI-specific_issues;verbatim;
+    8;check_for_secrets;no_injection_vulnerabilities;no_unsafe_patterns;
+```
+
+**Semantics:** The parser MUST reproduce all numbered steps in order. Collapsing 8 steps to "follow the self-review checklist" is a parsing error. Sub-items on each step (categories, flags, tool invocations) MUST also be preserved.
+
+**When to use:** Any content where order matters and partial reproduction is a functional failure — checklists, setup sequences, workflows with dependencies between steps.
+
+#### 6.4 `;verbatim;` Modifier
+
+Appending `;verbatim;` to any constraint item signals that the exact phrasing of that item is required and MUST NOT be paraphrased.
+
+```yamo
+constraints:
+  - self_review_step_2_categories;architecture_boundaries,database_correctness,code_quality,testing_requirements,API_correctness,AI-generated_code_signals;verbatim;
+  - ai_disclosure;Generated-by: <Agent Name and Version> following the guidelines;verbatim;
+  - fork_check_branch_a;if_origin_does_not_point_to_apache/airflow;use_origin_as_fork_remote;verbatim;
+```
+
+**Semantics:** The item's value must be reproduced character-for-character. No synonym substitution, no abbreviation, no summarization.
+
+**When to use:** Named category lists where omitting any item is a functional error; exact tool invocations with flags that must not be paraphrased; verbatim text the user will copy (disclosure statements, commit messages).
+
+#### 6.5 YAML Literal Block Scalars
+
+For multi-line verbatim content (PR body templates, heredocs, commit message formats), use YAML literal block scalar syntax (pipe `|`):
+
+```yamo
+agent: CommitsAndPRs;
+...
+pr_body_template: |
+  Brief description of the changes.
+
+  closes: #ISSUE  (if applicable)
+
+  ---
+
+  ##### Was generative AI tooling used to co-author this PR?
+
+  - [X] Yes — <Agent Name and Version>
+
+  Generated-by: <Agent Name and Version> following the guidelines
+```
+
+**Semantics:** The block content is immune to LLM compression. The parser copies it; it does not reason about it. This is the strongest verbatim preservation available — the content never enters the inference path.
+
+**When to use:** Any text the user must copy exactly: PR body templates, commit message templates, configuration file blocks, shell heredocs. If the user will paste it, use a literal block.
+
+#### 6.6 Content Classification Protocol
+
+Before translating any source document to YAMO format, classify all content by type:
+
+| Source pattern | Target primitive |
+|---|---|
+| Multi-line block the user copies verbatim | YAML literal block scalar (`key: \|`) |
+| Numbered ordered checklist / sequential workflow | `procedure:` block |
+| If/else logic with multiple resolution paths | Named per-branch items in `preserve:` or `constraints:` with `;verbatim;` |
+| Exact flag combinations, named category lists | `;verbatim;` modifier on constraint items |
+| Rule-based prohibitions / enforcement | `constraints:` block (standard) |
+| Stateful context passed between agents | `context:` block (standard) |
+
+**Invariant:** A source document containing verbatim templates, ordered procedures, or conditional branches MUST NOT be translated to YAMO using only `constraints:` blocks. The compression failure is predictable and avoidable.
+
+#### 6.7 Interaction with Token Optimization
+
+Verbatim preservation and token optimization are complementary, not conflicting:
+
+- Token optimization (§1–4) reduces redundancy in **rule-based** content
+- Verbatim preservation (§6) protects **procedural and template** content from compression
+
+A single agent block may use both: a `constraints;use_group;core_validation;` reference (§2) alongside a `procedure:` block (§6.3) for its ordered steps. The optimization applies to the constraints; the procedure remains fully expanded.
+
+**Anti-pattern:** Applying constraint group compression to procedural steps compresses content that must not be compressed. Constraint groups are for rule-based content. Procedure blocks are for ordered steps.
+
+#### 6.8 Token Cost
+
+Verbatim preservation primitives increase token count compared to compressed representations. This is intentional — the cost of preservation is always less than the cost of an incorrect output.
+
+| Technique | Token delta | Correctness guarantee |
+|---|---|---|
+| Flat constraint item (compressed) | Baseline | None — LLM may paraphrase |
+| `;verbatim;` modifier | +1 token | Signals exact phrasing required |
+| `preserve:` block | +2–5 tokens overhead | Reproduction without inference |
+| `procedure:` block | Full step detail preserved | No collapse to summary |
+| YAML literal block scalar | Full content preserved | Immune to inference path |
 
 ### 6. Parsing Rules
 
@@ -344,6 +479,10 @@ Based on production optimization of a 7-agent workflow:
 | Shorthand field names | ❌ | ✅ |
 | Constraint groups | ❌ | ✅ |
 | Meta-patterns | ❌ | ✅ |
+| `preserve:` block | ❌ | ✅ |
+| `procedure:` block | ❌ | ✅ |
+| `;verbatim;` modifier | ❌ | ✅ |
+| YAML literal block scalars | ❌ | ✅ |
 
 **Migration**: Optional. v1.0 files continue to work unchanged. Optimization is additive.
 
@@ -403,6 +542,7 @@ function expand_v11_to_v10(yamo_content):
 3. **Import Statements**: Reference constraint groups from external files
 4. **Macro Expansion**: User-defined syntax transformations
 5. **Compression Standard**: Canonical compressed representation for blockchain storage
+6. **Verbatim validation tooling**: Static checker that detects compressed constraint items that should be literal block scalars or procedure blocks
 
 ### Research Directions
 
@@ -422,6 +562,9 @@ The following are reserved and MUST NOT be used as custom group or pattern names
 | `tpl` | Template path reference |
 | `ts` | Timestamp expansion |
 | `from_` | Agent handoff prefix |
+| `preserve` | Verbatim content block |
+| `procedure` | Ordered procedure block |
+| `verbatim` | Constraint item modifier (as trailing semicolon tag) |
 
 ## Appendix B: Optimization Guidelines
 

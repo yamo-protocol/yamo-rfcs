@@ -470,6 +470,7 @@ Wildcard matching: kernel:* matches all kernel sub-operations
 - [ ] **Implement** — Ed25519 device auth with @noble/ed25519 (closes RFC-0004 gap)
 
 ### Tier 3: Medium (Formalization of proven innovations)
+- [x] **Amend RFC-0003** — Verbatim Preservation Primitives (`preserve:`, `procedure:`, `;verbatim;` modifier, YAML literal block scalars) ✅ COMPLETE 2026-03-07
 - [ ] **Draft RFC-0012** — S-MORA Retrieval Augmentation
 - [ ] **Amend RFC-0004** — Pairing protocol handshake, scope hierarchy, X-Forwarded-For
 - [ ] **Amend RFC-0006** — Heartbeat frequency, Ghost Protection shell specifics
