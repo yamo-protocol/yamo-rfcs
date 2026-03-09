@@ -471,7 +471,7 @@ Wildcard matching: kernel:* matches all kernel sub-operations
 
 ### Tier 3: Medium (Formalization of proven innovations)
 - [x] **Amend RFC-0003** — Verbatim Preservation Primitives (`preserve:`, `procedure:`, `;verbatim;` modifier, YAML literal block scalars) ✅ COMPLETE 2026-03-07
-- [~] **Multi-Model Routing** — Phase 1+2 (shadow mode) implemented in yamo-os 2026-03-09; Phase 3+4 (active dispatch, composite workflow) pending; candidate for RFC-0014 when active dispatch stabilises
+- [~] **Multi-Model Routing** — Phase 1+2+3 complete (shadow mode + WorkflowEngine) in yamo-os 2026-03-09; Phase 4 (active dispatch) pending; candidate for RFC-0014 when active dispatch stabilises
 - [ ] **Draft RFC-0012** — S-MORA Retrieval Augmentation
 - [ ] **Amend RFC-0004** — Pairing protocol handshake, scope hierarchy, X-Forwarded-For
 - [ ] **Amend RFC-0006** — Heartbeat frequency, Ghost Protection shell specifics
