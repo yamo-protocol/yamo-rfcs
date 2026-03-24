@@ -1,6 +1,6 @@
 # RFC-0012: S-MORA Retrieval Augmentation
 
-**Status:** Draft
+**Status:** Implemented
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-18
 **Updated:** 2026-02-21
