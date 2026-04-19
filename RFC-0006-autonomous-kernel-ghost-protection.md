@@ -80,6 +80,8 @@ trigger;agents_md_load;
 
 #### 2.2 The Semicolon Protocol — Operational Syntax Requirement
 
+> **⚠ Requirement demoted to OPTIONAL — see [RFC-0015 Amendment 01](./RFC-0015-amendment-01-empirical-results.md) (2026-04-18).** The "Analogical Prompt Injection" failure mode described below was tested empirically and not observed: across three model families ghost rates were statistically identical between YAMO and Markdown formats (Fisher p = 1.000 in every run), including under context pressure sweeps up to 8K tokens. The original MUST is therefore demoted to MAY; authors MAY use semicolon syntax where determinism of field order matters, but it is NOT required for compliance or injection resistance.
+
 Operational sections of `AGENTS.md` MUST use YAMO-native semicolon syntax, not Markdown lists. Markdown lists are susceptible to **Analogical Prompt Injection** — a failure mode where LLM narrative context overrides structured protocol instructions by treating them as prose suggestions rather than machine-executable directives.
 
 **Semicolon syntax REQUIRED for:**

@@ -155,6 +155,8 @@ The system automatically tunes its "curiosity" (target entropy) based on recent 
 
 Moving to a protocol-native architecture eliminates the "translation layer" between the agent's logic and its communication. LLMs are mathematically more reliable at generating and following a structured, semicolon-terminated syntax like YAMO than they are at managing nested JSON or long-form narrative prose.
 
+> **⚠ Claim retracted — see [RFC-0015 Amendment 01](./RFC-0015-amendment-01-empirical-results.md) (2026-04-18).** Empirical evaluation across three model families (llama3.1:8b, glm-5.1, claude-opus-4-7; 320 total trials) failed to reject H0: semicolon-terminated YAMO syntax shows no statistically or practically significant compliance advantage over equivalent Markdown, and costs more tokens. The "mathematically more reliable" phrasing above is retained for historical record but is NOT supported by evidence and MUST NOT be cited as a design justification.
+
 ## Backwards Compatibility
 
 - **Breaking Change**: v3.0 agents cannot parse legacy JSON-based state from v1.x skills without an adapter.
