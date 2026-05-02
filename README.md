@@ -65,6 +65,15 @@ The community participates through:
 
 - **RFC-0001**: YAMO v1.0 Protocol Specification
 
+## Implemented RFCs
+
+- **RFC-0008**: YAMO Wire Protocol v1 — **Implemented (core); Partial (evolution topics)** (gateway RPC, audit format, channel messages, device auth)
+- **RFC-0010-A**: Prompt Field Sanitisation — **Implemented** (`sanitizePromptField` / `sanitizeSkillId` in `lib/utils/prompt-security.ts`)
+- **RFC-0011**: @yamo/memory-mesh Specification — **Implemented** (schema, API contract, LessonLearned wire format, wisdom distillation, S-MORA)
+- **RFC-0012**: S-MORA Retrieval Augmentation — **Implemented** (5-layer RAG: scrubbing, HyDE-Lite, multi-channel, RRF, heritage-aware reranking)
+- **RFC-0014**: YAMO Block Codec — **Implemented** (canonical `encodeBlock`/`decodeBlock` + `%3B` escape rule amending RFC-0011 §3.1)
+- **RFC-0017**: Dispatch-Bead Lifecycle Records — **Implemented (Phase 1+2); Phase 3 deferred** (`memory_dispatches` sidecar; lifecycle, routing capture, recursion lineage, memory linkage)
+
 ## Draft RFCs
 
 - **RFC-0002**: YAMO v1.1 - Constitutional Governance Layer
@@ -74,12 +83,9 @@ The community participates through:
 - **RFC-0006**: Autonomous Kernel & Ghost Protection (amended 2026-02-21: v3.1 self-healing & semicolon protocol)
 - **RFC-0007**: Semantic Heritage & Wisdom Distillation
 - **RFC-0009**: Workspace File Format Specification (amended 2026-02-21: v3.1 compliance tiers)
-- **RFC-0011**: @yamo/memory-mesh Specification — **Implemented** (schema, API contract, LessonLearned wire format, wisdom distillation, S-MORA)
-- **RFC-0012**: S-MORA Retrieval Augmentation — **Implemented** (5-layer RAG: scrubbing, HyDE-Lite, multi-channel, RRF, heritage-aware reranking)
-
-## Proposed RFCs
-
-- **RFC-0008**: YAMO Wire Protocol v1 (gateway RPC, audit format, channel messages, device auth)
+- **RFC-0010**: Constitutional Value Hierarchy & Prompting System
+- **RFC-0013**: YAMO Deployment and Operational Model
+- **RFC-0015**: Format Validation, Formal Grammar & Empirical Evidence Framework (with Amendment 01 — empirical results; §D.2 updated post-implementation audit 2026-04-16)
 
 ## Expert Review
 
