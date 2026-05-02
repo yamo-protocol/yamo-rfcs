@@ -72,6 +72,7 @@ The community participates through:
 - **RFC-0011**: @yamo/memory-mesh Specification — **Implemented** (schema, API contract, LessonLearned wire format, wisdom distillation, S-MORA)
 - **RFC-0012**: S-MORA Retrieval Augmentation — **Implemented** (5-layer RAG: scrubbing, HyDE-Lite, multi-channel, RRF, heritage-aware reranking)
 - **RFC-0014**: YAMO Block Codec — **Implemented** (canonical `encodeBlock`/`decodeBlock` + `%3B` escape rule amending RFC-0011 §3.1)
+- **RFC-0016**: Multi-Model Routing & Composite Workflows — **Implemented (Phases 1–4 + Ensemble)** (RouterAgent, ModelRegistry, RoutingDecision zod contract, rule-based override, REASONER_TOOL_WORKFLOW, ENSEMBLE_REASONER_TOOL_WORKFLOW)
 - **RFC-0017**: Dispatch-Bead Lifecycle Records — **Implemented (Phase 1+2); Phase 3 deferred** (`memory_dispatches` sidecar; lifecycle, routing capture, recursion lineage, memory linkage)
 
 ## Draft RFCs
