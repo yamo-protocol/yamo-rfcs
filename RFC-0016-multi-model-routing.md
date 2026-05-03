@@ -1,6 +1,6 @@
 # RFC-0016: Multi-Model Routing & Composite Workflows
 
-**Status:** Implemented (Phases 1–4 + Ensemble); active in production with `model_roles` collapsed to a single provider pending vLLM rollout
+**Status:** Implemented (Phases 1–4 + Ensemble); active in production with differentiated model roles (ollama + ollama_coder + zai). vLLM was not deployed — Ollama local inference serves the lightweight roles.
 **Author:** Soverane Labs
 **Created:** 2026-05-02
 **Updated:** 2026-05-02
@@ -507,10 +507,11 @@ should alert on sustained high fallback rates as a router-availability signal.
 
 ### Phase 4+ work items
 
-1. **Live multi-provider deployment.** Production currently has all `model_roles` set
-   to `zai` pending vLLM rollout. The differentiated hardware allocation
-   (router/fast: 2-7B GPU, reasoner: 60B+ GPU, tool: 7-14B GPU) requires the vLLM
-   endpoints described in CLAUDE.md.
+1. **Live multi-provider deployment.** ✅ **Complete (2026-05-03).** Production runs
+   `routing_mode: "active"` with differentiated roles: router/utility=ollama (qwen2.5:7b),
+   tool=ollama_coder (deepseek-coder:6.7b), fast/reasoner=zai (glm-5.1). vLLM was not
+   deployed; Ollama local inference substituted for lightweight roles. A 60B+ dedicated
+   reasoner endpoint remains a future option but is not blocking.
 2. **Accuracy harness.** A periodic job that samples N shadow-mode decisions and
    produces a confusion matrix vs. manual classification, alerting on drift.
 3. **Fallback policy.** When a per-role provider is unhealthy, the registry
