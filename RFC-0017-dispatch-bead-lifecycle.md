@@ -1,6 +1,6 @@
 # RFC-0017: Dispatch-Bead Lifecycle Records
 
-**Status:** Implemented (Phase 1+2); Phase 3 deferred
+**Status:** Implemented (Phase 1+2+3 items 1+3); Phase 3 item 2 deferred
 **Author:** Soverane Labs
 **Created:** 2026-05-02
 **Updated:** 2026-05-02
@@ -386,22 +386,23 @@ bound.
 
 ### Phase 3 work items
 
-1. **Inbound memory linkage (`memory_in_ids`).** Thread `_dispatchId` through
-   `KernelBrain.search()` / `KernelBrain.smora()` options and inject at the kernel's
-   grounding / retrieval-fan-out / skill-scanner search call sites. Append via
-   `appendDispatchMemory(id, "in", […ids])`.
+1. **Inbound memory linkage (`memory_in_ids`).** ✅ **Implemented `2e15c6e` (2026-05-03).**
+   `KernelBrain.search()`, `.smora()`, and `.searchSkills()` now read `_dispatchId` from
+   options and call `appendDispatchMemory("in", ids)`. `kernel.execute()` skill-scan site
+   passes `params._dispatchId` to `searchSkills`.
 
 2. **Workflow-tool closure parent context.** Either change the
    `toolExecutor: (input: string) => Promise<string>` signature to accept parent context
    (rippling through `WorkflowEngine` / `WorkflowExecutor` / `workflow-types`), or adopt
    `AsyncLocalStorage.run(dispatchId, …)` at the top of `kernel.execute` so the existing
    closure can read the active dispatch via `als.getStore()`. The latter is more
-   ambitious but generalizes to any future site where `params` doesn't propagate.
+   ambitious but generalizes to any future site where `params` doesn't propagate
+   (including RFC-0007 §1 `insertHeritage`).
 
-3. **Replay endpoint (`/dispatches/:id/replay`).** Resolve `memory_in_ids` to a payload
-   that re-creates the dispatch's grounded input. Bolts directly into the
-   yamo-dispatch cycle-7 verifier-loop candidate ("does this answer cite anything not in
-   the SOURCE/MEMORY blocks?").
+3. **Replay endpoint (`/dispatches/:id/replay`).** ✅ **Implemented `2e15c6e` (2026-05-03).**
+   `GET /dispatches/:id/replay` resolves `memory_in_ids` → `brain.get()` for each id,
+   wraps content in `<MEMORY>` blocks (same format as `yamo-dispatch --ground-memory`),
+   returns `grounded_prompt` ready for re-dispatch or verifier use.
 
 ---
 
