@@ -1,10 +1,19 @@
 # RFC-0007: Semantic Heritage & Wisdom Distillation
 
-**Status:** Draft
+**Status:** Partially implemented — §2–§4 [NORMATIVE], §1 [SPECIFIED]
 **Author:** Soverane Labs & Collaborative Swarm
 **Created:** 2026-02-17
-**Updated:** 2026-02-21
+**Updated:** 2026-05-02
 **Related:** RFC-0006 (Autonomous Kernel — heartbeat trigger for distillation cycle), RFC-0010 (Constitutional Value Hierarchy — FINAL phase reasoning produces LessonLearned candidates), RFC-0011 (MemoryMesh — implementation of wisdom distillation, canonical LessonLearned wire format), RFC-0012 (S-MORA — enhanced lesson retrieval via HyDE-Lite + heritage-aware reranking)
+
+## Implementation Status
+
+| Section | Component | Status | Implemented by |
+|---------|-----------|--------|----------------|
+| §1 | Semantic Heritage Protocol (`intent_chain`, `hypotheses`, `rationales`) | `[SPECIFIED]` | `KernelBrain.insertHeritage()` exists but is never called at runtime. No kernel call site populates the heritage chain during execution. Depends on context-threading infrastructure (see RFC-0017 Phase 3 item 2). |
+| §2 | Wisdom Distillation Workflow | `[NORMATIVE]` | `kernel.heartbeat()` calls `brain.distillLesson()` on every failure scan cycle (up to 3 per heartbeat). Provenance-anchored. `lib/kernel/kernel.ts:2420`. |
+| §3 | LessonLearned Block (wire format) | `[NORMATIVE]` | Canonical format in RFC-0011 §3.5. Used in `lib/ui/repl.ts:328` and `lib/ui/pi-repl.ts:484` for manual lesson recording. |
+| §4 | SubconsciousReflector | `[NORMATIVE]` | `GET /recall` gateway endpoint (`lib/interface/gateway.ts:711`). `tools/subconscious-recall.ts` for CLI use. Called from `lib/ui/repl.ts:34` before first prompt. Uses S-MORA hybrid search per §4.1. |
 
 ## Summary
 
@@ -88,6 +97,7 @@ Semantic Heritage prevents "Intent Decay" in long-running projects. Wisdom Disti
 |---------|------|-------------|
 | 0.1.0 | 2026-02-17 | Initial draft — Semantic Heritage Protocol, Wisdom Distillation Workflow, LessonLearned Block, SubconsciousReflector |
 | 0.1.1 | 2026-02-21 | Add RFC cross-references; update LessonLearned §3 to point to RFC-0011 §3.5 as canonical wire format; add `required_fields:` terminology note |
+| 0.2.0 | 2026-05-02 | Add Implementation Status table. §2–§4 confirmed [NORMATIVE] via source audit. §1 (Semantic Heritage Protocol / `insertHeritage`) remains [SPECIFIED] — no runtime call site; blocked on context-threading infrastructure (RFC-0017 Phase 3 item 2). |
 
 ---
 
