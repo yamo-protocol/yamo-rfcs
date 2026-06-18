@@ -104,12 +104,29 @@ from `EntropyMeter` (exploration rises when success is high and diversity low).
   the routed-from context; `supersedes` a prior failed route) so
   `decisionLineage()` can answer "why did routing change for this intent?"
 
-### 6. Rollout via existing `routing_mode`
+### 6. Rollout via a dedicated `prior_mode` (decoupled from `routing_mode`)
 
-1. **shadow:** log where the prior *would* diverge from rules/LLM; accumulate
-   `memory_dispatches`; change nothing.
-2. **validate:** confirm via `routeStats()` that the prior beats the status quo.
-3. **active:** enable the nudge in live dispatch.
+The prior mode is its own config key (`prior_mode` / `YAMO_PRIOR_MODE`,
+`off | shadow | active`), **independent of `routing_mode`**. When unset it is
+derived from `routing_mode` (`active`→`active`, `shadow`→`shadow`, else `off`)
+for backward compatibility. The decoupling matters because the prior should
+learn from **honest** outcomes — `(route_target, status)` is only a true
+per-target signal when execution actually follows the routed target, i.e. under
+`routing_mode: "active"`. So the supported rollout is:
+
+1. **accumulate (honest):** `routing_mode: "active"` + `prior_mode: "shadow"` —
+   the routed target is really used (clean `memory_dispatches` data) while the
+   prior only logs `Router[prior] shadow divergence` and never re-routes.
+2. **validate:** `scripts/validate-prior.ts` confirms via `routeStats()` that the
+   prior beats the status quo (≥`minSamples` per intent, ≥`minDelta`).
+3. **flip:** a human sets `prior_mode: "active"` to enable the evidence-gated,
+   ε-explored nudge in live dispatch.
+
+> Note: with `prior_mode` unset and `routing_mode: "active"`, the prior would
+> auto-enforce the moment an intent crosses the evidence gate — there is no human
+> checkpoint. Setting `prior_mode: "shadow"` during accumulation restores that
+> gate. (Implemented: `lib/config` + `kernel.ts`; tested in
+> `active-routing.test.ts` / `config.test.ts`.)
 
 ## Rationale
 
