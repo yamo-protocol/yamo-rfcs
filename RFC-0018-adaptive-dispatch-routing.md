@@ -3,9 +3,9 @@
 **Status:** Draft
 **Author:** Soverane Labs
 **Created:** 2026-05-25
-**Updated:** 2026-05-25
+**Updated:** 2026-07-28
 **Depends on:** RFC-0016 (multi-model routing — the `RouterAgent`/`RoutingDecision` contract this augments), RFC-0017 (dispatch-bead lifecycle — `memory_dispatches` is the feedback data source)
-**Companion:** memory-mesh Decision Context Graph (`decision_edges`, `recordOutcome`) — optional richer signals (§ Specification 5)
+**Companion:** memory-mesh skill store (`updateSkillReliability`) — skill outcome loop (§ Specification 5)
 **Implemented by:** _(proposed)_ `yamo-os/lib/brain/kernel-brain.ts` (`routeStats()`), `yamo-os/lib/kernel/route-prior.ts` (new), `yamo-os/lib/llm/router-agent.ts`, `yamo-os/lib/kernel/kernel.ts` (close site)
 
 ---
@@ -94,15 +94,36 @@ this._routePrior.observe(intentOf(id), targetOf(id), status === "done", latencyM
 Tunables (defaults): `MIN_SAMPLES = 20`, `minDelta = 0.15`, `epsilon` sourced
 from `EntropyMeter` (exploration rises when success is high and diversity low).
 
-### 5. Optional richer signals (memory-mesh DCG)
+### 5. Optional richer signals — skill outcome loop
 
-- **Skill outcomes:** when a dispatch selected a synthesized skill, call
-  memory-mesh `recordOutcome(skillMemoryId, { status })` on close → feeds
-  `importance_score`, which `InterceptionEngine`'s 30% reliability term already
-  reads. Closes the *skill* loop with the same mechanism.
-- **Route lineage:** record routing decisions as `decision_edges` (`depends-on`
-  the routed-from context; `supersedes` a prior failed route) so
-  `decisionLineage()` can answer "why did routing change for this intent?"
+_(Revised 2026-07-28, workspace-1ds. The original text prescribed memory-mesh
+`recordOutcome(skillMemoryId, { status })` on close, "feeding
+`importance_score`, which `InterceptionEngine`'s 30% reliability term already
+reads." That data path does not exist: synthesized skills live in the
+`synthesized_skills` table while `recordOutcome` resolves ids against
+`memory_entries` (it would throw `memory not found`); the reliability term
+reads `metadata.reliability`/`success_rate`, not `importance_score`; and
+recordOutcome's last-write-wins hard set (0.9/0.2) is the wrong shape for
+streaming per-dispatch outcomes — one flaky failure would erase all
+accumulated evidence.)_
+
+- **Skill outcomes** _(implemented: `kernel._recordSkillOutcome`)_: when a
+  dispatch executes a synthesized skill, the kernel persists the outcome via
+  memory-mesh `updateSkillReliability(skillId, success)` — a bounded walk on
+  `metadata.reliability` (+0.1 success / −0.2 failure, clamped [0,1]) that
+  also increments `use_count` and stamps `last_used`: precisely the fields
+  `InterceptionEngine`'s 30% reliability and 10% use-confidence terms read,
+  plus the time-decay anchor. Wired fire-and-forget at the three outcome
+  sites in `_dispatchSynthesized` (intent-response mismatch, normal
+  completion, throw), with the interception metadata cache cleared once the
+  write lands so the next `selectSkill` sees fresh reliability without a
+  restart. Covered by a real-temp-table regression test
+  (`test/unit/kernel/skill-outcome-real.test.ts`).
+- **Route lineage** _(dropped, workspace-1ds rescope)_: recording routing
+  decisions as `decision_edges` is redundant with the `memory_dispatches`
+  route history + `routeStats()`, and dispatch ids do not resolve in the
+  mesh's memory-id space. If durable route explainability is ever wanted,
+  scope it to `prior_mode: active` override events only.
 
 ### 6. Rollout via a dedicated `prior_mode` (decoupled from `routing_mode`)
 
